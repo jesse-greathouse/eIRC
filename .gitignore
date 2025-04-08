@@ -1,0 +1,47 @@
+# Bazel build outputs
+bazel-*
+bazel-out/
+bazel-bin/
+bazel-testlogs/
+bazel-*.*
+
+# Symlink created by Bazel (WORKSPACE -> real location)
+bazel-workspace
+
+# Compilation database (if used)
+compile_commands.json
+
+# CMake (if you ever cross-integrate)
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+# Build scripts / local config
+*.log
+*.swp
+*.swo
+*.tmp
+
+# Generated packaging files
+*.deb
+*.rpm
+*.tar.gz
+*.zip
+
+# Ignore binary output folder
+/bin/
+/dist/
+/out/
+
+# VSCode
+.vscode/
+.settings/
+
+# Ignore crash or core dumps
+core
+*.core
+
+# Ignore var/
+
+var/
