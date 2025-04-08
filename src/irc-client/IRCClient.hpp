@@ -13,6 +13,12 @@ struct User
 	std::string status; // "", "@", or "+"
 };
 
+struct EventHandler
+{
+	std::function<bool(const std::string &)> predicate;
+	std::vector<std::function<void(const std::string &)>> handlers;
+};
+
 class IRCClient
 {
 public:
@@ -23,14 +29,17 @@ public:
 	void startInputLoop();
 	void readLoop(const std::vector<std::string> &channels);
 	void signoff(const std::vector<std::string> &channels, const std::string &quitMessage);
+	void addEventHandler(const std::string &eventKey, std::function<void(const std::string &)> handler);
 
 private:
+	void registerEventHandlers();
 	void handlePing(const std::string &message);
 	void handleRplNameReply(const std::string &rawLine);
 	void joinChannels(const std::vector<std::string> &channels);
 	std::string formatUserList(const std::string &channelName) const;
 	std::string formatChannelList() const;
 
+	std::map<std::string, EventHandler> eventHandlers;
 	std::map<std::string, std::vector<User>> channels;
 	asio::io_context &ioContext;
 	asio::ip::tcp::socket socket;

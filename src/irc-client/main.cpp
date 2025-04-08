@@ -5,6 +5,10 @@
 #include "ArgParser.hpp"
 #include "IOAdapter.hpp"
 
+// Event Handlers
+#include "EventHandlers/PingHandler.hpp"
+#include "EventHandlers/PrivmsgHandler.hpp"
+
 #include <iostream>
 #include <asio.hpp>
 #include <memory>
@@ -33,6 +37,10 @@ int main(int argc, char *argv[])
 
         asio::io_context ioContext;
         IRCClient client(ioContext, logger, *io, args.channels);
+
+        client.addEventHandler("PING", pingHandler(logger));
+        client.addEventHandler("PRIVMSG", privmsgHandler(logger));
+
         client.connect(args.server, args.port);
         client.authenticate(args.nick, args.user);
         client.startInputLoop();

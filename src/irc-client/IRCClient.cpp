@@ -13,6 +13,51 @@ IRCClient::IRCClient(asio::io_context &context, Logger &logger, IOAdapter &ui, c
         joinedList += ch;
     }
     logger.log("IRCClient constructed with channels: " + joinedList);
+
+    registerEventHandlers();
+}
+
+void IRCClient::registerEventHandlers()
+{
+    eventHandlers["PING"] = {
+        [](const std::string &line)
+        {
+            return line.substr(0, 5) == "PING ";
+        },
+        {[this](const std::string &line)
+         {
+             handlePing(line);
+         }}};
+
+    eventHandlers["RPL_NAMEREPLY"] = {
+        [](const std::string &line)
+        {
+            return line.find(" 353 ") != std::string::npos;
+        },
+        {[this](const std::string &line)
+         {
+             handleRplNameReply(line);
+         }}};
+
+    eventHandlers["END_OF_MOTD_OR_NO_MOTD"] = {
+        [this](const std::string &line)
+        {
+            return !joined && (line.find("376") != std::string::npos || line.find("422") != std::string::npos);
+        },
+        {[this](const std::string &)
+         {
+             joinChannels(joinedChannels);
+             joined = true;
+         }}};
+
+    eventHandlers["PRIVMSG"] = {
+        [](const std::string &line)
+        {
+            return line.find(" PRIVMSG ") != std::string::npos;
+        },
+        {
+            // No built-in handlers; external modules can register theirs
+        }};
 }
 
 void IRCClient::connect(const std::string &server, int port)
@@ -165,22 +210,20 @@ void IRCClient::readLoop(const std::vector<std::string> &channels)
             logger.log(line);
             ui.drawOutput(line);
 
-            if (line.substr(0, 5) == "PING ")
+            // Loops through the event handlers.
+            // Executes a list of registered handlers if its the right event.
+            for (const auto &[key, handler] : eventHandlers)
             {
-                handlePing(line);
-            }
-            else if (line.find(" 353 ") != std::string::npos)
-            {
-                handleRplNameReply(line);
-            }
-
-            if (!joined && (line.find("376") != std::string::npos || line.find("422") != std::string::npos))
-            {
-                joinChannels(channels);
-                joined = true;
+                if (handler.predicate(line))
+                {
+                    for (const auto &fn : handler.handlers)
+                        fn(line);
+                    break;
+                }
             }
         }
     }
+
     logger.log("Disconnected.");
     ui.drawOutput("Disconnected.");
 }
@@ -239,7 +282,7 @@ std::string IRCClient::formatUserList(const std::string &channelName) const
         response += user.status + user.nick;
     }
 
-    return "Users in " + channel + ": " + response;
+    return "users :" + channel + ": " + response;
 }
 
 std::string IRCClient::formatChannelList() const
@@ -247,7 +290,7 @@ std::string IRCClient::formatChannelList() const
     if (channels.empty())
         return "No channels joined or received from server yet.";
 
-    std::string response = "Channels: ";
+    std::string response = "channels :";
     bool first = true;
     for (const auto &[channel, _] : channels)
     {
@@ -257,4 +300,15 @@ std::string IRCClient::formatChannelList() const
         first = false;
     }
     return response;
+}
+
+void IRCClient::addEventHandler(const std::string &eventKey, std::function<void(const std::string &)> handler)
+{
+    auto it = eventHandlers.find(eventKey);
+    if (it == eventHandlers.end())
+    {
+        throw std::runtime_error("Cannot add handler: event key '" + eventKey + "' is not registered.");
+    }
+
+    it->second.handlers.push_back(std::move(handler));
 }

@@ -43,6 +43,19 @@ cc_library(
     visibility = ["//visibility:public"],
 )
 
+cc_library(
+    name = "event_handlers",
+    srcs = [],
+    hdrs = [
+        "EventHandlers/PingHandler.hpp",
+        "EventHandlers/PrivmsgHandler.hpp",
+    ],
+    deps = [
+        ":logger",
+    ],
+    visibility = ["//visibility:public"],
+)
+
 cc_binary(
     name = "irc-client",
     srcs = ["main.cpp"],
@@ -52,6 +65,7 @@ cc_binary(
         ":arg_parser",
         ":ncurses_ui",
         ":unix_socket_ui",
+        ":event_handlers",
     ],
     copts = ["-std=c++20", "-Wall", "-Wextra"],
     linkopts = ["-lncurses", "-lpthread"],
