@@ -1,0 +1,30 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use Cwd qw(getcwd abs_path);
+use File::Basename;
+use lib(dirname(abs_path(__FILE__))  . "/modules");
+use eIRC::Web qw(web_start web_restart web_stop web_kill);
+
+warn $@ if $@; # Handle exceptions
+
+# Action is the first arg (start, restart, stop, kill)
+my ($action) = @ARGV;
+
+if (not defined $action) {
+  die "Available actions are start, restart stop and kill.\n";
+}
+
+if ("start" eq $action) {
+   web_start();
+} elsif ("restart" eq $action) {
+   web_restart();
+} elsif ("stop" eq $action) {
+   web_stop();
+} elsif ("kill" eq $action) {
+   web_stop();
+   web_kill();
+} else {
+    die "Available actions are start, restart stop and kill.\n";
+}
