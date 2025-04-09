@@ -31,28 +31,37 @@ cc_library(
 )
 
 cc_library(
-    name = "irc_client_lib",
-    srcs = ["IRCClient.cpp"],
-    hdrs = ["IRCClient.hpp", "IOAdapter.hpp"],
-    deps = [
-        ":logger",
-        ":ncurses_ui",
-        ":unix_socket_ui",
-    ],
-    copts = ["-std=c++20"],
+    name = "commands",
+    hdrs = glob(["Commands/*.hpp"]),
     visibility = ["//visibility:public"],
 )
 
 cc_library(
     name = "event_handlers",
     srcs = [],
-    hdrs = [
-        "EventHandlers/PingHandler.hpp",
-        "EventHandlers/PrivmsgHandler.hpp",
-    ],
+    hdrs = glob(["EventHandlers/*.hpp"]),
     deps = [
         ":logger",
     ],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "irc_client_lib",
+    srcs = ["IRCClient.cpp"],
+    hdrs = [
+        "IRCClient.hpp",
+        "IRCEventKeys.hpp",
+        "IOAdapter.hpp",
+    ],
+    deps = [
+        ":logger",
+        ":ncurses_ui",
+        ":unix_socket_ui",
+        ":commands",
+    ],
+    includes = ["Commands"], 
+    copts = ["-std=c++20"],
     visibility = ["//visibility:public"],
 )
 
@@ -66,6 +75,7 @@ cc_binary(
         ":ncurses_ui",
         ":unix_socket_ui",
         ":event_handlers",
+        ":commands", 
     ],
     copts = ["-std=c++20", "-Wall", "-Wextra"],
     linkopts = ["-lncurses", "-lpthread"],

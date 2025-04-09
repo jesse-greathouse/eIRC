@@ -1,14 +1,14 @@
 // EventHandlers/PingHandler.hpp
 #pragma once
 
-#include "../Logger.hpp"
+#include "../IRCClient.hpp"
 #include <functional>
 #include <string>
 
-inline std::function<void(const std::string &)> pingHandler(Logger &logger)
+inline std::function<void(IRCClient &, const std::string &)> pingHandler()
 {
-	return [&logger](const std::string &line)
+	return [](IRCClient &client, const std::string &line)
 	{
-		logger.log("[PING] " + line + "\n");
+		client.handlePing(line);
 	};
 }

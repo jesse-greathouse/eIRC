@@ -24,3 +24,11 @@ void Logger::log(const std::string &message)
 		out << trimmed << std::endl;
 	std::cout << trimmed << std::endl;
 }
+
+void Logger::flush()
+{
+	if (out.is_open())
+	{
+		out.flush();
+	}
+}

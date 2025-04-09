@@ -1,6 +1,12 @@
 #include "IRCClient.hpp"
+#include "IRCEventKeys.hpp"
 #include <thread>
 #include <sstream>
+
+#include "Commands/QuitCommand.hpp"
+#include "Commands/UsersCommand.hpp"
+#include "Commands/ChannelsCommand.hpp"
+#include "Commands/InputCommand.hpp"
 
 IRCClient::IRCClient(asio::io_context &context, Logger &logger, IOAdapter &ui, const std::vector<std::string> &channels)
     : ioContext(context), socket(context), logger(logger), ui(ui), joined(false), joinedChannels(channels)
@@ -14,50 +20,60 @@ IRCClient::IRCClient(asio::io_context &context, Logger &logger, IOAdapter &ui, c
     }
     logger.log("IRCClient constructed with channels: " + joinedList);
 
+    registerCommands();
     registerEventHandlers();
+}
+
+void IRCClient::registerCommands()
+{
+    commands = {
+        QuitCommand,
+        UsersCommand,
+        ChannelsCommand,
+        InputCommand,
+    };
 }
 
 void IRCClient::registerEventHandlers()
 {
-    eventHandlers["PING"] = {
+    eventHandlers[IRCEventKey::Ping] = EventHandler{
         [](const std::string &line)
         {
             return line.substr(0, 5) == "PING ";
         },
-        {[this](const std::string &line)
-         {
-             handlePing(line);
-         }}};
+        {}};
 
-    eventHandlers["RPL_NAMEREPLY"] = {
+    eventHandlers[IRCEventKey::RplNameReply] = EventHandler{
         [](const std::string &line)
         {
             return line.find(" 353 ") != std::string::npos;
         },
-        {[this](const std::string &line)
-         {
-             handleRplNameReply(line);
-         }}};
+        {}};
 
-    eventHandlers["END_OF_MOTD_OR_NO_MOTD"] = {
+    eventHandlers[IRCEventKey::MotdEnd] = EventHandler{
         [this](const std::string &line)
         {
             return !joined && (line.find("376") != std::string::npos || line.find("422") != std::string::npos);
         },
-        {[this](const std::string &)
-         {
-             joinChannels(joinedChannels);
-             joined = true;
-         }}};
+        {}};
 
-    eventHandlers["PRIVMSG"] = {
+    eventHandlers[IRCEventKey::Privmsg] = EventHandler{
         [](const std::string &line)
         {
             return line.find(" PRIVMSG ") != std::string::npos;
         },
+        {}};
+
+    eventHandlers[IRCEventKey::Whois] = {
+        [](const std::string &line)
         {
-            // No built-in handlers; external modules can register theirs
-        }};
+            return line.find(" 311 ") != std::string::npos ||
+                   line.find(" 312 ") != std::string::npos ||
+                   line.find(" 317 ") != std::string::npos ||
+                   line.find(" 318 ") != std::string::npos ||
+                   line.find(" 319 ") != std::string::npos;
+        },
+        {}};
 }
 
 void IRCClient::connect(const std::string &server, int port)
@@ -86,24 +102,24 @@ void IRCClient::handlePing(const std::string &message)
     logger.log("→ " + response.substr(0, response.size() - 1)); // remove final \n for logging
 }
 
-void IRCClient::handleRplNameReply(const std::string &rawLine)
+void IRCClient::handleNameReply(const std::string &rawLine)
 {
     std::istringstream iss(rawLine);
-    std::string prefix, code, target, visibility, channel, colon;
-
-    iss >> prefix >> code >> target >> visibility >> channel;
+    std::string prefix, code, target, visibility, channelName, colon;
+    iss >> prefix >> code >> target >> visibility >> channelName;
 
     std::string remainder;
     std::getline(iss, remainder);
 
-    // Now extract nick list after the first ':' in the remainder
     std::size_t pos = remainder.find(':');
     std::string nickList = (pos != std::string::npos) ? remainder.substr(pos + 1) : remainder;
-
     std::istringstream nickStream(nickList);
-    std::string nick;
-    std::vector<User> updatedUsers;
 
+    Channel &channel = channels[channelName];
+    channel.name = channelName;
+    channel.users.clear();
+
+    std::string nick;
     while (nickStream >> nick)
     {
         std::string status;
@@ -113,10 +129,17 @@ void IRCClient::handleRplNameReply(const std::string &rawLine)
             nick = nick.substr(1);
         }
 
-        updatedUsers.push_back({nick, status});
-    }
+        User *user = findOrCreateUser(nick);
+        user->status = status; // optional: status may differ across channels
 
-    channels[channel] = std::move(updatedUsers);
+        channel.users.push_back(user);
+    }
+}
+
+User *IRCClient::findOrCreateUser(const std::string &nick)
+{
+    auto [it, inserted] = users.try_emplace(nick, User{nick, {}});
+    return &it->second;
 }
 
 void IRCClient::joinChannels(const std::vector<std::string> &channels)
@@ -130,53 +153,42 @@ void IRCClient::joinChannels(const std::vector<std::string> &channels)
 
 void IRCClient::startInputLoop()
 {
-    std::thread([this]()
-                {
-        while (true)
-        {
-            std::string input = ui.getInput();
+    inputThread = std::thread([this]()
+                              {
+        try {
+            while (running.load()) {
+                std::string input = ui.getInput();
+                sanitizeInput(input);
+                if (input.empty()) {
+                    logger.log("Socket client disconnected");
+                    signoff(joinedChannels, "eIRC ( https://github.com/jesse-greathouse/eIRC )");
+                    break;
+                }
 
-            if (input.empty())
-            {
-                logger.log("Socket client disconnected");
-                signoff(joinedChannels, "eIRC ( https://github.com/jesse-greathouse/eIRC )");
-                break;
+                bool handled = false;
+                for (const auto &command : commands) {
+                    if (command.predicate(input)) {
+                        command.handler(*this, input);
+                        handled = true;
+                        break;
+                    }
+                }
+
+                if (!handled) {
+                    throw std::runtime_error(":client error :Unrecognized command: \"" + input + "\"");
+                }
+
+                if (!isJoined()) {
+                    break;
+                }
             }
-
-            while (!input.empty() && (input.back() == '\n' || input.back() == '\r'))
-            {
-                input.pop_back();
-            }
-
-            if (input == "/quit")
-            {
-                signoff(joinedChannels, "eIRC ( https://github.com/jesse-greathouse/eIRC )");
-                break;
-            }
-
-            if (input.rfind("/input ", 0) == 0)
-            {
-                input = input.substr(7); // Remove "/input " prefix
-            }
-
-            if (input.rfind("/users ", 0) == 0)
-            {
-                std::string channel = input.substr(7); // Extract channel name
-                ui.drawOutput(formatUserList(channel));
-                continue;
-            }
-
-            if (input == "/channels")
-            {
-                ui.drawOutput(formatChannelList());
-                continue;
-            }
-
-            std::string message = input + "\n";
-            asio::write(socket, asio::buffer(message));
-            logger.log("→ " + input);
-        } })
-        .detach();
+        }
+        catch (const std::exception &ex) {
+            const std::string message = "Fatal error in input thread: " + std::string(ex.what());
+            logger.log(message);
+            logger.flush(); // <-- manually flush the logger
+            std::exit(1);
+        } });
 }
 
 void IRCClient::readLoop(const std::vector<std::string> &channels)
@@ -217,7 +229,7 @@ void IRCClient::readLoop(const std::vector<std::string> &channels)
                 if (handler.predicate(line))
                 {
                     for (const auto &fn : handler.handlers)
-                        fn(line);
+                        fn(*this, line); // Pass the IRCClient reference
                     break;
                 }
             }
@@ -240,49 +252,39 @@ void IRCClient::signoff(const std::vector<std::string> &channels, const std::str
     std::string quitMsg = "QUIT :" + quitMessage + "\n";
     asio::write(socket, asio::buffer(quitMsg));
     logger.log("→ " + quitMsg);
+    stop();
+}
 
+void IRCClient::stop()
+{
+    setJoined(false); // stops the loop by protocol logic
+    running = false;
     socket.close();
 }
 
 std::string IRCClient::formatUserList(const std::string &channelName) const
 {
-    std::string channel = channelName;
-
-    // Trim trailing \r or \n
-    while (!channel.empty() && (channel.back() == '\r' || channel.back() == '\n'))
-    {
-        channel.pop_back();
-    }
-
-    if (channel.empty())
+    std::string chan = channelName;
+    while (!chan.empty() && (chan.back() == '\r' || chan.back() == '\n'))
+        chan.pop_back();
+    if (chan.empty())
         return ":client error :No channel specified.";
+    if (chan[0] != '#')
+        chan = "#" + chan;
 
-    if (channel[0] != '#')
-        channel = "#" + channel;
-
-    auto it = channels.find(channel);
-    if (it == channels.end())
-    {
-        std::string knownChannels;
-        for (const auto &[chan, _] : channels)
-        {
-            if (!knownChannels.empty())
-                knownChannels += ", ";
-            knownChannels += chan;
-        }
-
-        return ":client error :channel " + channel + " not found or no users." + (knownChannels.empty() ? "" : " (Current channels are: " + knownChannels + ")");
-    }
+    auto it = channels.find(chan);
+    if (it == channels.end() || it->second.users.empty())
+        return ":client error :channel " + chan + " not found or no users.";
 
     std::string response;
-    for (const auto &user : it->second)
+    for (const User *user : it->second.users)
     {
         if (!response.empty())
             response += ", ";
-        response += user.status + user.nick;
+        response += user->status + user->nick;
     }
 
-    return ":client users " + channel + " :" + response;
+    return ":client users " + chan + " :" + response;
 }
 
 std::string IRCClient::formatChannelList() const
@@ -302,7 +304,7 @@ std::string IRCClient::formatChannelList() const
     return response;
 }
 
-void IRCClient::addEventHandler(const std::string &eventKey, std::function<void(const std::string &)> handler)
+void IRCClient::addEventHandler(const std::string &eventKey, std::function<void(IRCClient &, const std::string &)> handler)
 {
     auto it = eventHandlers.find(eventKey);
     if (it == eventHandlers.end())
@@ -311,4 +313,65 @@ void IRCClient::addEventHandler(const std::string &eventKey, std::function<void(
     }
 
     it->second.handlers.push_back(std::move(handler));
+}
+
+void IRCClient::sanitizeInput(std::string &input)
+{
+    while (!input.empty() && (input.back() == '\n' || input.back() == '\r'))
+    {
+        input.pop_back();
+    }
+}
+
+void IRCClient::joinInputLoop()
+{
+    if (inputThread.joinable())
+    {
+        inputThread.join();
+    }
+}
+
+const std::map<std::string, Channel> &IRCClient::getChannels() const
+{
+    return channels;
+}
+
+const std::map<std::string, User> &IRCClient::getUsers() const
+{
+    return users;
+}
+
+const std::vector<std::string> &IRCClient::getJoinedChannels() const
+{
+    return joinedChannels;
+}
+
+Logger &IRCClient::getLogger()
+{
+    return logger;
+}
+
+bool IRCClient::isJoined() const
+{
+    return joined.load();
+}
+
+bool IRCClient::getJoined() const
+{
+    return joined.load();
+}
+
+void IRCClient::setJoined(bool joined)
+{
+    this->joined.store(joined);
+}
+
+IOAdapter &IRCClient::getUi()
+{
+    return ui;
+}
+
+asio::ip::tcp::socket &IRCClient::getSocket()
+{
+    return socket;
 }
