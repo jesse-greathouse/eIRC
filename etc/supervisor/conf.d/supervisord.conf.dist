@@ -1,0 +1,72 @@
+[supervisord]
+logfile=%(ENV_LOG_DIR)s/supervisord.log
+pidfile=%(ENV_VAR)s/pid/supervisord.pid
+
+[inet_http_server]
+port=127.0.0.1:__SUPERVISORCTL_PORT__
+username=__SUPERVISORCTL_USER__
+password=__SUPERVISORCTL_SECRET__
+
+[supervisorctl]
+serverurl=http://localhost:__SUPERVISORCTL_PORT__
+username=__SUPERVISORCTL_USER__
+password=__SUPERVISORCTL_SECRET__
+
+[rpcinterface:supervisor]
+supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface
+
+[program:cleancache]
+process_name=%(ENV_APP_NAME)s_web_%(program_name)s
+environment=VAR="%(ENV_VAR)s",PATH="%(ENV_BIN)s:%(ENV_PATH)s"
+directory=%(ENV_DIR)s
+command=bin/cleancache
+redirect_stderr=true
+stdout_events_enabled=true
+stderr_logfile=%(ENV_LOG_DIR)s/error.log
+stdout_logfile=%(ENV_LOG_DIR)s/supervisord.log
+startsecs = 0
+exitcodes = 0
+autostart = true
+autorestart = false
+priority=1
+
+[program:dhp]
+process_name=%(ENV_APP_NAME)s_web_%(program_name)s
+environment=ETC="%(ENV_ETC)s",PATH="%(ENV_BIN)s:%(ENV_PATH)s"
+directory=%(ENV_DIR)s
+command=bin/dhp
+redirect_stderr=true
+stdout_events_enabled=true
+stderr_logfile=%(ENV_LOG_DIR)s/error.log
+stdout_logfile=%(ENV_LOG_DIR)s/supervisord.log
+startsecs = 0
+exitcodes = 0
+autostart = true
+autorestart = false
+priority=2
+
+[program:php]
+process_name=%(ENV_APP_NAME)s_web_%(program_name)s
+environment=PATH="%(ENV_BIN)s:%(ENV_OPT)s/php/sbin:%(ENV_PATH)s"
+directory=%(ENV_DIR)s
+command=php-fpm -y etc/php-fpm.d/php-fpm.conf
+redirect_stderr=true
+stdout_events_enabled=true
+stderr_logfile=%(ENV_LOG_DIR)s/error.log
+stdout_logfile=%(ENV_LOG_DIR)s/supervisord.log
+autostart = true
+autorestart = true
+priority=3
+
+[program:nginx]
+process_name=%(ENV_APP_NAME)s_web_%(program_name)s
+environment=SSL=%(ENV_SSL)s,REDIS_HOST=%(ENV_REDIS_HOST)s,DIR="%(ENV_DIR)s",BIN="%(ENV_BIN)s",ETC="%(ENV_ETC)s",OPT="%(ENV_OPT)s",TMP="%(ENV_TMP)s",VAR="%(ENV_VAR)s",WEB="%(ENV_WEB)s",LOG_DIR="%(ENV_LOG_DIR)s",CACHE_DIR="%(ENV_CACHE_DIR)s",PORT="%(ENV_PORT)s",PATH="%(ENV_BIN)s:%(ENV_OPT)s/openresty/nginx/sbin:%(ENV_PATH)s"
+directory=%(ENV_DIR)s
+command=authbind --deep nginx -p %(ENV_OPT)s/openresty/nginx -c %(ENV_ETC)s/nginx/nginx.conf
+redirect_stderr=true
+stdout_events_enabled=true
+stderr_logfile=%(ENV_LOG_DIR)s/error.log
+stdout_logfile=%(ENV_LOG_DIR)s/supervisord.log
+autostart=true
+autorestart=true
+priority=4

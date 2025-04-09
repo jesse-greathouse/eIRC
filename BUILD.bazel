@@ -1,5 +1,5 @@
 filegroup(
     name = "irc-client-bin",
-    srcs = ["//src/irc-client:irc-client"],
+    srcs = ["//lib/irc-client:irc-client"],
     visibility = ["//visibility:public"],
 )

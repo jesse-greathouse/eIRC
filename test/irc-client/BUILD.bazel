@@ -3,7 +3,7 @@ load("@rules_cc//cc:defs.bzl", "cc_test")
 cc_test(
     name = "arg_parser_test",
     srcs = ["ArgParser.cpp"],
-    deps = ["//src/irc-client:arg_parser"],
+    deps = ["//lib/irc-client:arg_parser"],
     copts = ["-std=c++20"],
     visibility = ["//visibility:public"],
 )

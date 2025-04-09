@@ -1,0 +1,19 @@
+[supervisord]
+logfile=%(ENV_LOG_DIR)s/instance-manager.log
+pidfile=%(ENV_VAR)s/pid/instance-manager.pid
+
+[inet_http_server]
+port=127.0.0.1:__INSTANCECTL_PORT__
+username=__INSTANCECTL_USER__
+password=__INSTANCECTL_SECRET__
+
+[supervisorctl]
+serverurl=http://localhost:__INSTANCECTL_PORT__
+username=__INSTANCECTL_USER__
+password=__INSTANCECTL_SECRET__
+
+[rpcinterface:supervisor]
+supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface
+
+[include]
+files = instances/*.conf
