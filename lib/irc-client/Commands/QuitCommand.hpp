@@ -11,5 +11,5 @@ inline Command QuitCommand{
 	[](IRCClient &client, const std::string &input)
 	{
 		client.getLogger().log("Disconnect requested");
-		client.signoff(client.getJoinedChannels(), "eIRC ( https://github.com/jesse-greathouse/eIRC )");
+		client.signoff(client.getChannels(), "eIRC ( https://github.com/jesse-greathouse/eIRC )");
 	}};

@@ -50,7 +50,7 @@ public:
 	void authenticate(const std::string &nick, const std::string &user);
 	void startInputLoop();
 	void readLoop(const std::vector<std::string> &channels);
-	void signoff(const std::vector<std::string> &channels, const std::string &quitMessage);
+	void signoff(const std::map<std::string, Channel> &channels, const std::string &quitMessage);
 	void addEventHandler(const std::string &eventKey, std::function<void(IRCClient &, const std::string &)> handler);
 	void joinChannels(const std::vector<std::string> &channels);
 	bool isJoined() const;

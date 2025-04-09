@@ -161,7 +161,7 @@ void IRCClient::startInputLoop()
                 sanitizeInput(input);
                 if (input.empty()) {
                     logger.log("Socket client disconnected");
-                    signoff(joinedChannels, "eIRC ( https://github.com/jesse-greathouse/eIRC )");
+                    signoff(getChannels(), "eIRC ( https://github.com/jesse-greathouse/eIRC )");
                     break;
                 }
 
@@ -240,11 +240,12 @@ void IRCClient::readLoop(const std::vector<std::string> &channels)
     ui.drawOutput("Disconnected.");
 }
 
-void IRCClient::signoff(const std::vector<std::string> &channels, const std::string &quitMessage)
+void IRCClient::signoff(const std::map<std::string, Channel> &channels, const std::string &quitMessage)
 {
-    for (const auto &chan : channels)
+    for (const auto &pair : channels)
     {
-        std::string partMsg = "PART #" + chan + " :Bye bye\n";
+        const std::string &chan = pair.first;
+        std::string partMsg = "PART " + chan + " :Bye bye\n";
         asio::write(socket, asio::buffer(partMsg));
         logger.log("→ " + partMsg);
     }
@@ -252,6 +253,7 @@ void IRCClient::signoff(const std::vector<std::string> &channels, const std::str
     std::string quitMsg = "QUIT :" + quitMessage + "\n";
     asio::write(socket, asio::buffer(quitMsg));
     logger.log("→ " + quitMsg);
+
     stop();
 }
 
