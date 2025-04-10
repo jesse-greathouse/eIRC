@@ -78,9 +78,8 @@ std::string UnixSocketUI::getInput()
 		}
 		else if (len == 0)
 		{
-			// Client disconnected
-			logger.log("Socket client disconnected");
-			exit(0); // Exit the program
+			// Connection closed by client
+			return ""; // Let the caller decide what to do
 		}
 	}
 	return "";

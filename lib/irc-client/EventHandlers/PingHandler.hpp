@@ -1,4 +1,3 @@
-// EventHandlers/PingHandler.hpp
 #pragma once
 
 #include "../IRCClient.hpp"

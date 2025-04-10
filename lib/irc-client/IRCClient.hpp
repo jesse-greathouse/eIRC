@@ -6,40 +6,12 @@
 #include <vector>
 #include <asio.hpp>
 #include <atomic>
+#include "Channel.hpp"
+#include "EventHandler.hpp"
 #include "Logger.hpp"
+#include "User.hpp"
 #include "IOAdapter.hpp"
 #include "Commands/Command.hpp"
-
-class IRCClient;
-
-struct WhoisState
-{
-	std::string realname;
-	std::string server;
-	std::string serverInfo;
-	std::string channels;
-	std::string idleSeconds;
-	std::string signonTime;
-};
-
-struct User
-{
-	std::string nick;
-	std::string status; // "", "@", "+"
-	std::optional<WhoisState> whoisState;
-};
-
-struct Channel
-{
-	std::string name;
-	std::vector<User *> users;
-};
-
-struct EventHandler
-{
-	std::function<bool(const std::string &)> predicate;
-	std::vector<std::function<void(IRCClient &, const std::string &)>> handlers;
-};
 
 class IRCClient
 {

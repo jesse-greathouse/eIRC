@@ -259,7 +259,6 @@ void IRCClient::signoff(const std::map<std::string, Channel> &channels, const st
 
 void IRCClient::stop()
 {
-    setJoined(false); // stops the loop by protocol logic
     running = false;
     socket.close();
 }

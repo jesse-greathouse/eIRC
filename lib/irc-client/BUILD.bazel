@@ -1,6 +1,17 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 
 cc_library(
+    name = "irc_core",
+    hdrs = [
+        "User.hpp",
+        "Channel.hpp",
+        "WhoisState.hpp",
+        "EventHandler.hpp",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
     name = "logger",
     srcs = ["Logger.cpp"],
     hdrs = ["Logger.hpp"],
@@ -55,6 +66,7 @@ cc_library(
         "IOAdapter.hpp",
     ],
     deps = [
+        ":irc_core",
         ":logger",
         ":ncurses_ui",
         ":unix_socket_ui",
