@@ -13,6 +13,7 @@ struct ParsedArgs
 	std::vector<std::string> channels;
 	std::string logPath;
 	std::string listenSocket;
+	std::string instance;
 };
 
 class ArgParser
@@ -23,4 +24,5 @@ public:
 
 private:
 	ParsedArgs parsed;
+	std::string makeInstanceId() const;
 };

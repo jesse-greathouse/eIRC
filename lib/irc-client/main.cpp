@@ -35,6 +35,7 @@ int main(int argc, char *argv[])
         ArgParser parser(argc, argv);
         ParsedArgs args = parser.getArgs();
         Logger logger(args.logPath);
+        std::string instance_id = args.instance;
 
         std::unique_ptr<IOAdapter> io;
         if (!args.listenSocket.empty())

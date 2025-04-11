@@ -56,7 +56,7 @@ sub get_linux_distribution {
         { pattern => 'arch',            name => 'Arch' },
         { pattern => 'alpine',          name => 'Alpine' },
         { pattern => 'gentoo',          name => 'Gentoo' },
-        { pattern => 'openmandriva',    name => 'Mandriva' },
+        { pattern => 'openmandriva',    name => 'OpenMandriva' },
     );
 
     # Check /etc/os-release first (most modern distros)

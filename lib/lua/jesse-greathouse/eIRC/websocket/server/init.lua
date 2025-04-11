@@ -1,25 +1,13 @@
--- lib/lua/jesse-greathouse/eIRC/websocket/server/init.lua
 local _M = {}
 local server = require "resty.websocket.server"
 local irc = require "jesse-greathouse.eIRC.websocket.server.irc_socket"
 
-local function connect_with_retry(max_attempts, delay)
-  local sock
-  for attempt = 1, max_attempts do
-    sock = irc.connect()
-    if sock then
-      return sock
-    end
-    ngx.sleep(delay)
-  end
-  return nil
-end
-
-function _M.run(nick, server_addr, port, channels)
+function _M.run(nick, server_addr, port, channels, instance_id)
   if not nick or type(nick) ~= "string" or nick == "" or
      not server_addr or type(server_addr) ~= "string" or server_addr == "" or
      not port or type(port) ~= "number" or
-     not channels or type(channels) ~= "string" or channels == "" then
+     not channels or type(channels) ~= "string" or channels == "" or
+     not instance_id or type(instance_id) ~= "string" or instance_id == "" then
     ngx.status = 400
     ngx.say("Bad request: missing or invalid parameters")
     return ngx.exit(400)
@@ -35,19 +23,22 @@ function _M.run(nick, server_addr, port, channels)
     return ngx.exit(444)
   end
 
-  local ok, err = irc.start_client(nick, server_addr, port, channels)
+  local ok, err = irc.start_client(nick, server_addr, port, channels, instance_id)
   if not ok then
     wb:send_text("IRC client startup failed: " .. (err or "unknown error"))
     return ngx.exit(444)
   end
 
-  local sock = connect_with_retry(10, 0.1)
+  -- Give time for socket to be created
+  ngx.sleep(0.1)
+
+  local sock = irc.connect_with_retry(10, 0.1, instance_id)
   if not sock then
     wb:send_text("IRC socket connection failed after multiple attempts")
     return ngx.exit(444)
   end
 
-  irc.receive(wb)
+  irc.receive(instance_id, wb)
 
   while true do
     local data, typ, err = wb:recv_frame()
@@ -65,7 +56,7 @@ function _M.run(nick, server_addr, port, channels)
       end
 
     elseif typ == "text" then
-      local ok, err = irc.send(data)
+      local ok, err = irc.send(instance_id, data)
       if not ok then
         wb:send_text("IRC send error: " .. (err or "unknown"))
       end
@@ -81,7 +72,10 @@ function _M.run(nick, server_addr, port, channels)
     end
   end
 
-  wb:send_close()
+  -- On disconnect, gracefully shut down IRC
+  irc.send(instance_id, "/quit")  -- 💬 Send /quit to IRC client
+  irc.close(instance_id)          -- 🔌 Close socket and cleanup state
+  wb:send_close()                 -- 📡 Finalize WebSocket
 end
 
 return _M

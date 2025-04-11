@@ -1,5 +1,7 @@
 #include "ArgParser.hpp"
 #include <sstream>
+#include <random>
+#include <iomanip>
 
 ArgParser::ArgParser(int argc, char *argv[])
 {
@@ -20,6 +22,7 @@ ArgParser::ArgParser(int argc, char *argv[])
 	parsed.port = std::stoi(args["port"]);
 	parsed.logPath = args.count("log") ? args["log"] : "client.log";
 	parsed.listenSocket = args.count("listen") ? args["listen"] : "";
+	parsed.instance = (args.count("instance") && !args["instance"].empty()) ? args["instance"] : makeInstanceId();
 
 	std::stringstream ss(args["channels"]);
 	std::string channel;
@@ -32,4 +35,18 @@ ArgParser::ArgParser(int argc, char *argv[])
 ParsedArgs ArgParser::getArgs() const
 {
 	return parsed;
+}
+
+std::string ArgParser::makeInstanceId() const
+{
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_int_distribution<> dis(0, 255);
+
+	std::ostringstream oss;
+	for (int i = 0; i < 16; ++i)
+	{
+		oss << std::hex << std::setw(2) << std::setfill('0') << dis(gen);
+	}
+	return oss.str();
 }
