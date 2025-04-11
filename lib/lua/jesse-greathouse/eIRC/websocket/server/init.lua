@@ -3,6 +3,18 @@ local _M = {}
 local server = require "resty.websocket.server"
 local irc = require "jesse-greathouse.eIRC.websocket.server.irc_socket"
 
+local function connect_with_retry(max_attempts, delay)
+  local sock
+  for attempt = 1, max_attempts do
+    sock = irc.connect()
+    if sock then
+      return sock
+    end
+    ngx.sleep(delay)
+  end
+  return nil
+end
+
 function _M.run(nick, server_addr, port, channels)
   if not nick or type(nick) ~= "string" or nick == "" or
      not server_addr or type(server_addr) ~= "string" or server_addr == "" or
@@ -29,10 +41,9 @@ function _M.run(nick, server_addr, port, channels)
     return ngx.exit(444)
   end
 
-  ngx.sleep(1.0)
-  local sock = irc.connect()
+  local sock = connect_with_retry(10, 0.1)
   if not sock then
-    wb:send_text("IRC socket connection failed")
+    wb:send_text("IRC socket connection failed after multiple attempts")
     return ngx.exit(444)
   end
 
