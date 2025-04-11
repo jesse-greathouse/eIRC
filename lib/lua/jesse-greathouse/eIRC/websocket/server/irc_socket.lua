@@ -8,6 +8,10 @@ local sockets = {}       -- instance_id -> socket
 local is_running = {}    -- instance_id -> boolean
 local readers = {}       -- instance_id -> thread
 
+local function get_socket_path(instance_id)
+  return os.getenv("VAR") .. "/socket/irc-client-" .. instance_id .. ".sock"
+end
+
 -- Starts an IRC client process if not already started
 function _M.start_client(nick, server, port, channels, instance_id)
   if not (nick and server and port and channels and instance_id) then
@@ -59,7 +63,7 @@ function _M.connect(instance_id)
     return sockets[instance_id]
   end
 
-  local socket_path = os.getenv("VAR") .. "/socket/irc-client-" .. instance_id .. ".sock"
+  local socket_path = get_socket_path(instance_id)
   local sock = socket.tcp()
   local ok, err = sock:connect("unix:" .. socket_path)
 
@@ -73,17 +77,22 @@ function _M.connect(instance_id)
   return sock
 end
 
--- Retry connect logic, encapsulated inside module
+-- Retry connect logic
 function _M.connect_with_retry(max_attempts, delay, instance_id)
+
+  ngx.sleep(delay)
+
   for attempt = 1, max_attempts do
-    ngx.log(ngx.INFO, "Attempting IRC socket connection, try #", attempt)
     local sock = _M.connect(instance_id)
-    if sock then
-      sock:settimeouts(0, 60000, 60000)
-      return sock
-    end
+      if sock then
+        sock:settimeouts(0, 60000, 60000)
+        return sock
+      end
+
     ngx.sleep(delay)
   end
+
+  ngx.log(ngx.ERR, "connect_with_retry(): Failed to connect to IRC socket after ", max_attempts, " attempts")
   return nil
 end
 
@@ -146,5 +155,7 @@ function _M.close(instance_id)
 
   readers[instance_id] = nil
 end
+
+_M.get_socket_path = get_socket_path
 
 return _M

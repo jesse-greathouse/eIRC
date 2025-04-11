@@ -29,12 +29,8 @@ function _M.run(nick, server_addr, port, channels, instance_id)
     return ngx.exit(444)
   end
 
-  -- Give time for socket to be created
-  ngx.sleep(0.1)
-
-  local sock = irc.connect_with_retry(10, 0.1, instance_id)
-  if not sock then
-    wb:send_text("IRC socket connection failed after multiple attempts")
+  if not irc.connect_with_retry(10, 0.1, instance_id) then
+    wb:send_text("IRC socket connection failed after 10 attempts")
     return ngx.exit(444)
   end
 
