@@ -1,3 +1,9 @@
+// File: UnixSocketUI.cpp
+// Requires: C++23
+// Purpose: Implements a UNIX domain socket-based UI adapter for headless I/O. Accepts connections
+//          from an external client, facilitating bidirectional communication between the IRC client
+//          and a socket peer (e.g. a WebSocket server or monitoring tool).
+
 #include "UnixSocketUI.hpp"
 #include "Logger.hpp"
 #include <unistd.h>

@@ -1,3 +1,8 @@
+// File: User.hpp
+// Requires: C++23
+// Purpose: Defines the User struct representing an IRC user, including nickname, status prefix
+//          (e.g., operator or voiced), and optional WHOIS metadata via WhoisState.
+
 #pragma once
 
 #include "WhoisState.hpp"

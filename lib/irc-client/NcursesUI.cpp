@@ -1,3 +1,8 @@
+// File: NcursesUI.cpp
+// Requires: C++23
+// Purpose: Implements a terminal-based UI using ncurses for input and output panes.
+//          Provides interactive I/O handling for IRC messages within a terminal environment.
+
 #include "NcursesUI.hpp"
 
 void NcursesUI::init()

@@ -1,3 +1,8 @@
+// File: IRCEventKeys.hpp
+// Requires: C++23
+// Purpose: Defines the IRCEventKey struct containing constant string identifiers for IRC protocol events.
+//          Used as keys for event handler registration and dispatch in the IRC client.
+
 #pragma once
 
 struct IRCEventKey

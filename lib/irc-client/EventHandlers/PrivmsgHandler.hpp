@@ -1,3 +1,8 @@
+// File: PrivmsgHandler.hpp
+// Requires: C++23
+// Purpose: Defines a handler for PRIVMSG events, logging incoming private messages
+//          to the IRC client’s logger for inspection or debugging.
+
 #pragma once
 
 #include "../IRCClient.hpp"

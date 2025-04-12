@@ -1,3 +1,8 @@
+// File: InputCommand.hpp
+// Requires: C++23
+// Purpose: Defines the `/input` command, which allows raw IRC protocol messages to be sent directly
+//          to the server. Useful for advanced usage or debugging unhandled commands.
+
 #pragma once
 
 #include "Command.hpp"

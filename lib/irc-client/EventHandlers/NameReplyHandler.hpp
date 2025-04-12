@@ -1,3 +1,8 @@
+// File: NameReplyHandler.hpp
+// Requires: C++23
+// Purpose: Defines a handler for RPL_NAMEREPLY events. Invokes IRCClient::handleNameReply
+//          to parse and update channel user lists when a NAMES response is received.
+
 #pragma once
 
 #include "../IRCClient.hpp"

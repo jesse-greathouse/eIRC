@@ -3,10 +3,10 @@ load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 cc_library(
     name = "irc_core",
     hdrs = [
-        "User.hpp",
         "Channel.hpp",
-        "WhoisState.hpp",
         "EventHandler.hpp",
+        "User.hpp",
+        "WhoisState.hpp",
     ],
     visibility = ["//visibility:public"],
 )
@@ -28,16 +28,23 @@ cc_library(
 cc_library(
     name = "ncurses_ui",
     srcs = ["NcursesUI.cpp"],
-    hdrs = ["NcursesUI.hpp", "IOAdapter.hpp"],
-    copts = ["-std=c++20"],
+    hdrs = [
+        "IOAdapter.hpp",
+        "NcursesUI.hpp",
+    ],
+    copts = ["-std=c++23"],
     visibility = ["//visibility:public"],
 )
 
 cc_library(
     name = "unix_socket_ui",
     srcs = ["UnixSocketUI.cpp"],
-    hdrs = ["UnixSocketUI.hpp", "IOAdapter.hpp", "Logger.hpp"],
-    copts = ["-std=c++20"],
+    hdrs = [
+        "IOAdapter.hpp",
+        "Logger.hpp",
+        "UnixSocketUI.hpp",
+    ],
+    copts = ["-std=c++23"],
     visibility = ["//visibility:public"],
 )
 
@@ -51,45 +58,52 @@ cc_library(
     name = "event_handlers",
     srcs = [],
     hdrs = glob(["EventHandlers/*.hpp"]),
+    visibility = ["//visibility:public"],
     deps = [
         ":logger",
     ],
-    visibility = ["//visibility:public"],
 )
 
 cc_library(
     name = "irc_client_lib",
     srcs = ["IRCClient.cpp"],
     hdrs = [
+        "IOAdapter.hpp",
         "IRCClient.hpp",
         "IRCEventKeys.hpp",
-        "IOAdapter.hpp",
     ],
+    copts = ["-std=c++23"],
+    includes = ["Commands"],
+    visibility = ["//visibility:public"],
     deps = [
+        ":commands",
         ":irc_core",
         ":logger",
         ":ncurses_ui",
         ":unix_socket_ui",
-        ":commands",
     ],
-    includes = ["Commands"], 
-    copts = ["-std=c++20"],
-    visibility = ["//visibility:public"],
 )
 
 cc_binary(
     name = "irc-client",
     srcs = ["main.cpp"],
+    copts = [
+        "-std=c++23",
+        "-Wall",
+        "-Wextra",
+    ],
+    linkopts = [
+        "-lncurses",
+        "-lpthread",
+    ],
+    visibility = ["//visibility:public"],
     deps = [
+        ":arg_parser",
+        ":commands",
+        ":event_handlers",
         ":irc_client_lib",
         ":logger",
-        ":arg_parser",
         ":ncurses_ui",
         ":unix_socket_ui",
-        ":event_handlers",
-        ":commands", 
     ],
-    copts = ["-std=c++20", "-Wall", "-Wextra"],
-    linkopts = ["-lncurses", "-lpthread"],
-    visibility = ["//visibility:public"],
 )

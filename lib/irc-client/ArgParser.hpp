@@ -1,3 +1,9 @@
+// File: ArgParser.hpp
+// Requires: C++23
+// Purpose: Declares the ArgParser class and ParsedArgs struct used to parse and store
+//          command-line arguments for configuring the IRC client, including network parameters,
+//          logging, channels, and instance identification.
+
 #pragma once
 
 #include <string>

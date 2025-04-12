@@ -1,3 +1,8 @@
+// File: NcursesUI.hpp
+// Requires: C++23
+// Purpose: Declares the NcursesUI class, an ncurses-based implementation of the IOAdapter interface.
+//          Provides a terminal-based interface for displaying IRC output and capturing user input in split panes.
+
 #pragma once
 
 #include <string>

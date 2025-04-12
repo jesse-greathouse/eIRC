@@ -1,3 +1,8 @@
+// File: Logger.cpp
+// Requires: C++23
+// Purpose: Provides logging functionality for both console and file output with trailing
+//          newline trimming. Used across the IRC client for consistent message logging.
+
 #include "Logger.hpp"
 #include <iostream>
 

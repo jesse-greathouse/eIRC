@@ -1,3 +1,9 @@
+// File: WhoisHandler.hpp
+// Requires: C++23
+// Purpose: Provides inline WHOIS response handlers for various IRC numeric codes (311–319).
+//          Dispatches parsed user metadata into the IRCClient's internal user map and logs
+//          a formatted WHOIS summary once complete.
+
 #pragma once
 
 #include "../IRCClient.hpp"

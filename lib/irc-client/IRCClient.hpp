@@ -1,3 +1,9 @@
+// File: IRCClient.hpp
+// Requires: C++23
+// Purpose: Declares the IRCClient class, which manages the lifecycle of an IRC session,
+//          including connection, authentication, input/output loops, command execution,
+//          event handling, and channel/user state. Central class in the client architecture.
+
 #pragma once
 
 #include <string>

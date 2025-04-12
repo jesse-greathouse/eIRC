@@ -1,3 +1,9 @@
+// File: UnixSocketUI.hpp
+// Requires: C++23
+// Purpose: Declares the UnixSocketUI class, an implementation of the IOAdapter interface that uses
+//          UNIX domain sockets to enable communication between the IRC client and external processes.
+//          Provides methods for initialization, shutdown, output rendering, and input retrieval.
+
 #pragma once
 
 #include "IOAdapter.hpp"

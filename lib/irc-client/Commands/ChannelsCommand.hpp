@@ -1,3 +1,8 @@
+// File: ChannelsCommand.hpp
+// Requires: C++23
+// Purpose: Defines the `/channels` command, which outputs a list of all channels the IRC client
+//          is currently tracking. Useful for confirming active channel state from the client.
+
 #pragma once
 
 #include "Command.hpp"

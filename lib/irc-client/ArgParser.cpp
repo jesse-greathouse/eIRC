@@ -1,3 +1,8 @@
+// File: ArgParser.cpp
+// Requires: C++23
+// Purpose: Parses command-line arguments into structured configuration for the IRC client,
+//          including support for instance ID generation using modern random utilities.
+
 #include "ArgParser.hpp"
 #include <sstream>
 #include <random>

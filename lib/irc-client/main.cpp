@@ -1,3 +1,9 @@
+// File: main.cpp
+// Requires: C++23
+// Purpose: Entry point for the IRC client. Parses arguments, sets up I/O abstraction,
+//          initializes the client, registers event handlers, and manages execution flow
+//          using modern memory and container features of C++23.
+
 #include "IRCClient.hpp"
 #include "NcursesUI.hpp"
 #include "UnixSocketUI.hpp"

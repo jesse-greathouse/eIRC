@@ -1,3 +1,9 @@
+// File: IRCClient.cpp
+// Requires: C++23
+// Purpose: Implements the core IRC client logic including command registration, event dispatching,
+//          async input/output loops, and channel/user state management using C++23 features like
+//          lambda expressions with captures, structured bindings, and improved standard containers.
+
 #include "IRCClient.hpp"
 #include "IRCEventKeys.hpp"
 #include <thread>

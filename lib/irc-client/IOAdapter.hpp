@@ -1,3 +1,9 @@
+// File: IOAdapter.hpp
+// Requires: C++23
+// Purpose: Declares the IOAdapter abstract base class, which defines a unified interface
+//          for user input/output handling. Allows interchangeable implementations such as
+//          NcursesUI and UnixSocketUI.
+
 #pragma once
 
 #include <string>
