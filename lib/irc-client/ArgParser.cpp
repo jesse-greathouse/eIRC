@@ -7,6 +7,9 @@
 #include <sstream>
 #include <random>
 #include <iomanip>
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 ArgParser::ArgParser(int argc, char *argv[])
 {
@@ -25,9 +28,9 @@ ArgParser::ArgParser(int argc, char *argv[])
 	parsed.user = args["nick"];
 	parsed.server = args["server"];
 	parsed.port = std::stoi(args["port"]);
-	parsed.logPath = args.count("log") ? args["log"] : "client.log";
-	parsed.listenSocket = args.count("listen") ? args["listen"] : "";
 	parsed.instance = (args.count("instance") && !args["instance"].empty()) ? args["instance"] : makeInstanceId();
+	parsed.listenSocket = makeSocketPath(parsed.instance, args.count("listen") ? args["listen"] : "");
+	parsed.logPath = makeLogPath(parsed.instance, args.count("log") ? args["log"] : "");
 
 	std::stringstream ss(args["channels"]);
 	std::string channel;
@@ -54,4 +57,32 @@ std::string ArgParser::makeInstanceId() const
 		oss << std::hex << std::setw(2) << std::setfill('0') << dis(gen);
 	}
 	return oss.str();
+}
+
+std::string ArgParser::makeLogPath(const std::string &instance, const std::string &logDir) const
+{
+	std::string logFileName = "irc-client-" + instance + ".log";
+
+	if (!logDir.empty())
+	{
+		return (std::filesystem::path(logDir) / logFileName).string();
+	}
+	else
+	{
+		return (std::filesystem::current_path() / logFileName).string();
+	}
+}
+
+std::string ArgParser::makeSocketPath(const std::string &instance, const std::string &listenDir) const
+{
+	std::string socketFile = "irc-client-" + instance + ".sock";
+
+	if (!listenDir.empty())
+	{
+		return (std::filesystem::path(listenDir) / socketFile).string();
+	}
+	else
+	{
+		return (std::filesystem::current_path() / socketFile).string();
+	}
 }

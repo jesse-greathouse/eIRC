@@ -13,6 +13,11 @@
 UnixSocketUI::UnixSocketUI(const std::string &path, Logger &logger)
 	: socketPath(path), logger(logger) {}
 
+UnixSocketUI::~UnixSocketUI()
+{
+	shutdown();
+}
+
 void UnixSocketUI::init()
 {
 	serverFd = socket(AF_UNIX, SOCK_STREAM, 0);

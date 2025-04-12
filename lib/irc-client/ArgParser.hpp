@@ -9,6 +9,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <filesystem> // Required for computing logPath
 
 struct ParsedArgs
 {
@@ -31,4 +32,7 @@ public:
 private:
 	ParsedArgs parsed;
 	std::string makeInstanceId() const;
+
+	std::string makeLogPath(const std::string &instance, const std::string &logDir) const;
+	std::string makeSocketPath(const std::string &instance, const std::string &listenDir) const;
 };

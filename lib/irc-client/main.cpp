@@ -5,6 +5,7 @@
 //          using modern memory and container features of C++23.
 
 #include "IRCClient.hpp"
+#include "IRCEventKeys.hpp"
 #include "NcursesUI.hpp"
 #include "UnixSocketUI.hpp"
 #include "Logger.hpp"
@@ -27,10 +28,10 @@
 std::map<std::string, std::vector<std::function<void(IRCClient &, const std::string &)>>> buildHandlers()
 {
     return {
-        {"MOTD_END", {motdEndHandler()}},
-        {"RPL_NAMEREPLY", {nameReplyHandler()}},
-        {"PING", {pingHandler()}},
-        {"WHOIS", {whoisHandler()}},
+        {IRCEventKey::MotdEnd, {motdEndHandler()}},
+        {IRCEventKey::RplNameReply, {nameReplyHandler()}},
+        {IRCEventKey::Ping, {pingHandler()}},
+        {IRCEventKey::Whois, {whoisHandler()}},
     };
 }
 

@@ -8,7 +8,7 @@ local sockets = {}       -- instance_id -> socket
 local is_running = {}    -- instance_id -> boolean
 local readers = {}       -- instance_id -> thread
 
-local function get_socket_path(instance_id)
+local function get_socket_file(instance_id)
   return os.getenv("VAR") .. "/socket/irc-client-" .. instance_id .. ".sock"
 end
 
@@ -23,8 +23,8 @@ function _M.start_client(nick, server, port, channels, instance_id)
     return true
   end
 
-  local socket_path = os.getenv("VAR") .. "/socket/irc-client-" .. instance_id .. ".sock"
-  local log_path = os.getenv("LOG_DIR") .. "/irc-client/" .. instance_id .. ".log"
+  local socket_dir = os.getenv("VAR") .. "/socket"
+  local log_dir = os.getenv("LOG_DIR") .. "/irc-client"
 
   local args = {
     os.getenv("BIN") .. "/irc-client",
@@ -32,8 +32,8 @@ function _M.start_client(nick, server, port, channels, instance_id)
     "--server=" .. server,
     "--port=" .. tostring(port),
     "--channels=" .. channels,
-    "--listen=" .. socket_path,
-    "--log=" .. log_path,
+    "--listen=" .. socket_dir,
+    "--log=" .. log_dir,
     "--instance=" .. instance_id
   }
 
@@ -63,9 +63,9 @@ function _M.connect(instance_id)
     return sockets[instance_id]
   end
 
-  local socket_path = get_socket_path(instance_id)
+  local socket_file = get_socket_file(instance_id)
   local sock = socket.tcp()
-  local ok, err = sock:connect("unix:" .. socket_path)
+  local ok, err = sock:connect("unix:" .. socket_file)
 
   if not ok then
     ngx.log(ngx.ERR, "Failed to connect to IRC socket: ", err)
@@ -156,6 +156,6 @@ function _M.close(instance_id)
   readers[instance_id] = nil
 end
 
-_M.get_socket_path = get_socket_path
+_M.get_socket_file = get_socket_file
 
 return _M

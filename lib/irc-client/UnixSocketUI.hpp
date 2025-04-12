@@ -16,6 +16,7 @@ class UnixSocketUI : public IOAdapter
 {
 public:
 	UnixSocketUI(const std::string &path, Logger &logger);
+	~UnixSocketUI();
 	void init() override;
 	void shutdown() override;
 	void drawOutput(const std::string &line) override;

@@ -76,6 +76,7 @@ cc_library(
     includes = ["Commands"],
     visibility = ["//visibility:public"],
     deps = [
+        ":arg_parser",
         ":commands",
         ":irc_core",
         ":logger",
