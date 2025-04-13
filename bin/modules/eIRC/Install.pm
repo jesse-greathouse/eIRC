@@ -208,8 +208,15 @@ sub install_openresty {
     my $originalDir = getcwd();
 
     # Unpack
-    system(('bash', '-c', "tar -xzf $dir/opt/openresty-*.tar.gz -C $dir/opt/"));
-    command_result($?, $!, 'Unpack Nginx (Openresty)... Archive...', 'tar -xzf ' . $dir . '/opt/openresty-*.tar.gz -C ' . $dir . ' /opt/');
+    my ($archive) = glob("$dir/opt/openresty-*.tar.gz");
+
+    unless ($archive && -e $archive) {
+        die "OpenResty archive not found: $dir/opt/openresty-*.tar.gz\n";
+    }
+
+    system('tar', '-xzf', $archive, '-C', "$dir/opt/");
+    command_result($?, $!, 'Unpack Nginx (Openresty)... Archive...', ['tar', '-xzf', $archive, '-C', "$dir/opt/"]);
+
 
     chdir glob("$dir/opt/openresty-*/");
 
@@ -229,22 +236,6 @@ sub install_openresty {
     # install OpenResty core
     system(('make', 'install'));
     command_result($?, $!, 'Install (Openresty)...', 'make install');
-
-    # Install lua-resty-core and lua-resty-lrucache
-    print "\n=================================================================\n";
-    print " Installing lua-resty-core and lua-resty-lrucache...\n";
-    print "=================================================================\n\n";
-
-    foreach my $lib ('lua-resty-core', 'lua-resty-lrucache') {
-        if (-d "./bundle/$lib") {
-            chdir "./bundle/$lib";
-            system('make', 'install', "DESTDIR=$dir");
-            command_result($?, $!, "Install $lib...", "make install DESTDIR=$dir");
-            chdir '../../../';  # Return to openresty source root
-        } else {
-            warn "WARNING: $lib not found in bundle/ — skipping\n";
-        }
-    }
 
     chdir $originalDir;
 }
@@ -277,15 +268,12 @@ sub install_symlinks {
     symlink("$optDir/php/bin/php", "$binDir/php");
 }
 
-# installs Perl Modules.
+# Installs Perl Modules.
 sub install_perl_modules {
     foreach my $perlModule (@perlModules) {
-        my @cmd = ('sudo');
-        push @cmd, 'cpanm';
-        push @cmd, $perlModule;
+        my @cmd = ('sudo', 'cpanm', $perlModule);
         system(@cmd);
-
-        command_result($?, $!, "Shared library pass for: $_", \@cmd);
+        command_result($?, $!, "Install Perl Module: $perlModule", \@cmd);
     }
 }
 
@@ -302,7 +290,7 @@ sub install_pear {
 
     # If Pear directory exists, delete it.
     if (-d "$dir/opt/pear") {
-        system(('bash', '-c', "rm -rf $dir/opt/pear"));
+        system('rm', '-rf', "$dir/opt/pear");
         command_result($?, $!, "Removing existing Pear directory...", "rm -rf $dir/opt/pear");
     }
 
@@ -345,57 +333,41 @@ sub install_imagick {
     }
 }
 
-# installs msgpack-php.
 sub install_msgpack {
     my ($dir) = @_;
     my $threads = how_many_threads_should_i_use();
-    my $optDir = $dir . '/opt';
-    my $phpizeBinary = $optDir . '/php/bin/phpize';
-    my $phpconfigBinary = $optDir . '/php/bin/php-config';
-    my $msgpackRepo = 'https://github.com/msgpack/msgpack-php.git';
+    my $optDir = "$dir/opt";
+    my $phpize = "$optDir/php/bin/phpize";
+    my $phpconfig = "$optDir/php/bin/php-config";
+    my $repo = 'https://github.com/msgpack/msgpack-php.git';
     my $originalDir = getcwd();
 
-    # Download Repo Command
-    my @downloadmsgpack = ('git');
-    push @downloadmsgpack, 'clone';
-    push @downloadmsgpack, $msgpackRepo;
+    system('git', 'clone', $repo);
+    command_result($?, $!, 'Downloading msgpack-php repo...', ['git', 'clone', $repo]);
 
-    # Configure Command
-    my @msgpackConfigure = ('./configure');
-    push @msgpackConfigure, '--prefix=' . $optDir;
-    push @msgpackConfigure, '--with-php-config=' . $phpconfigBinary;
+    chdir "$originalDir/msgpack-php" or die "Could not cd to msgpack-php";
 
-    # Delete Repo Command
-    my @msgpackDeleteRepo = ('rm');
-    push @msgpackDeleteRepo, '-rf';
-    push @msgpackDeleteRepo, "$originalDir/msgpack-php";
+    system($phpize);
+    command_result($?, $!, 'phpize...', [$phpize]);
 
-    system(@downloadmsgpack);
-    command_result($?, $!, 'Downloading msgpack-php repo...', \@downloadmsgpack);
-    chdir glob("$originalDir/msgpack-php");
+    system('./configure', "--prefix=$optDir", "--with-php-config=$phpconfig");
+    command_result($?, $!, 'Configuring msgpack-php...', ['./configure', "--prefix=$optDir", "--with-php-config=$phpconfig"]);
 
-    system($phpizeBinary);
-    command_result($?, $!, 'phpize...', \$phpizeBinary);
-
-    system(@msgpackConfigure);
-    command_result($?, $!, 'Configuring msgpack-php...', \@msgpackConfigure);
-
-    # Make and Install msgpack-php
     print "\n=================================================================\n";
     print " Compiling msgpack-php Extension...\n";
     print "=================================================================\n\n";
     print "Running make using $threads threads in concurrency.\n\n";
 
     system('make', "-j$threads");
-    command_result($?, $!, 'make msgpack-php...', "make -j$threads");
+    command_result($?, $!, 'make msgpack-php...', ['make', "-j$threads"]);
 
-    system('make install');
-    command_result($?, $!, 'make install msgpack-php', 'make install');
+    system('make', 'install');
+    command_result($?, $!, 'make install msgpack-php', ['make', 'install']);
 
-    chdir glob("$originalDir");
+    chdir $originalDir or die "Could not cd back to original directory";
 
-    system(@msgpackDeleteRepo);
-    command_result($?, $!, 'Deleting msgpack-php repo...', \@msgpackDeleteRepo);
+    system('rm', '-rf', "$originalDir/msgpack-php");
+    command_result($?, $!, 'Deleting msgpack-php repo...', ['rm', '-rf', "$originalDir/msgpack-php"]);
 }
 
 # installs phpredis.
@@ -500,7 +472,7 @@ sub install_composer_dependencies {
 
     # If elixir directory exists, delete it.
     if (-d $vendorDir) {
-        system(('bash', '-c', "rm -rf $vendorDir"));
+        system('rm', '-rf', $vendorDir);
         command_result($?, $!, "Removing existing composer vendors directory...", "rm -rf $vendorDir");
     }
 
@@ -514,9 +486,9 @@ sub cleanup {
     my ($dir) = @_;
     my $phpBuildDir = glob("$dir/opt/php-*/");
     my $openrestyBuildDir = glob("$dir/opt/openresty-*/");
-    system(('bash', '-c', "rm -rf $phpBuildDir"));
+    system('rm', '-rf', $phpBuildDir);
     command_result($?, $!, 'Remove PHP Build Dir...', "rm -rf $phpBuildDir");
-    system(('bash', '-c', "rm -rf $openrestyBuildDir"));
+    system('rm', '-rf', $openrestyBuildDir);
     command_result($?, $!, 'Remove Openresty Build Dir...', "rm -rf $openrestyBuildDir");
 }
 

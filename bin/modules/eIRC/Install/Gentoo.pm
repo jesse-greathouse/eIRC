@@ -68,8 +68,15 @@ sub install_php {
 
     my $originalDir = getcwd();
 
-    system('bash', '-c', "tar -xzf $dir/opt/php-*.tar.gz -C $dir/opt/");
-    command_result($?, $!, 'Unpacked PHP Archive...', 'tar -xzf ' . $dir . '/opt/php-*.tar.gz -C ' . $dir . '/opt/');
+    # Unpack PHP Archive
+    my ($archive) = glob("$dir/opt/php-*.tar.gz");
+
+    unless ($archive && -e $archive) {
+        die "PHP archive not found: $dir/opt/php-*.tar.gz\n";
+    }
+
+    system('tar', '-xzf', $archive, '-C', "$dir/opt/");
+    command_result($?, $!, 'Unpacked PHP Archive...', ['tar', '-xzf', $archive, '-C', "$dir/opt/"]);
 
     chdir glob("$dir/opt/php-*/");
 
