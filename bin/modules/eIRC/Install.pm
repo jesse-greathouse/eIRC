@@ -15,7 +15,7 @@ use eIRC::Utility qw(
 );
 use eIRC::System qw(how_many_threads_should_i_use);
 use Exporter 'import';
-our @EXPORT_OK = qw(install);
+our @EXPORT_OK = qw(install install_help);
 
 my $binDir = abs_path(dirname(__FILE__) . '/../../');
 my $applicationRoot = abs_path(dirname($binDir));
@@ -49,6 +49,38 @@ my @perlModules = (
 # ====================================
 #    Subroutines below this point
 # ====================================
+
+# Displays help for available install options.
+sub install_help {
+    print <<'EOF';
+Usage: install [--option ...]
+
+Installs eIRC and its dependencies. By default, runs a full install unless specific components are requested.
+
+Examples:
+  install                     # Full install (all components)
+  install --php               # Install only PHP
+  install --skip-node         # Install everything except Node.js
+  install --php --composer    # Install only PHP and Composer
+
+ Available options:
+  --system           Install OS-level dependencies
+  --node             Install Node.js and run frontend build
+  --perl             Install Perl modules
+  --openresty        Install and configure OpenResty
+  --php              Install PHP, configure php.ini, and PHP extensions
+  --composer         Install Composer and PHP packages
+
+ Skip options:
+  --skip-system      Skip OS-level dependency installation
+  --skip-node        Skip Node.js and frontend build
+  --skip-perl        Skip Perl module installation
+  --skip-openresty   Skip OpenResty setup
+  --skip-php         Skip PHP installation and config
+  --skip-composer    Skip Composer and PHP packages
+
+EOF
+}
 
 # Performs the install routine.
 sub install {
@@ -97,27 +129,38 @@ sub handle_options {
     my %skips;
     my %installs;
 
-    GetOptions ("skip-system"       => \$skips{'system'},
-                "skip-node"         => \$skips{'node'},
-                "skip-openresty"    => \$skips{'openresty'},
-                "skip-perl"         => \$skips{'perl'},
-                "skip-php"          => \$skips{'php'},
-                "skip-composer"     => \$skips{'composer'},
-                "system"            => \$installs{'system'},
-                "node"              => \$installs{'node'},
-                "openresty"         => \$installs{'openresty'},
-                "perl"              => \$installs{'perl'},
-                "php"               => \$installs{'php'},
-                "composer"          => \$installs{'composer'})
-    or die("Error in command line arguments\n");
+    GetOptions(
+        "skip-system"    => \$skips{'system'},
+        "skip-node"      => \$skips{'node'},
+        "skip-openresty" => \$skips{'openresty'},
+        "skip-perl"      => \$skips{'perl'},
+        "skip-php"       => \$skips{'php'},
+        "skip-composer"  => \$skips{'composer'},
+        "system"         => \$installs{'system'},
+        "node"           => \$installs{'node'},
+        "openresty"      => \$installs{'openresty'},
+        "perl"           => \$installs{'perl'},
+        "php"            => \$installs{'php'},
+        "composer"       => \$installs{'composer'},
+    ) or do {
+        print "Invalid install option.\n";
+        install_help();
+        exit(1);
+    };
 
     # If any of the components are requested for install...
-    # Flip the $defaultInstall flag to negative.
     foreach (@components) {
         if (defined $installs{$_}) {
             $defaultInstall = 0;
             last;
         }
+    }
+
+    # If invalid mix of flags was supplied (e.g., nothing valid at all)
+    if (!$defaultInstall && !grep { $installs{$_} } @components) {
+        print "No valid components selected for install.\n";
+        install_help();
+        exit(1);
     }
 
     # Set up an options hash with the default install flag.
