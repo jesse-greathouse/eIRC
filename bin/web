@@ -16,15 +16,21 @@ if (not defined $action) {
   die "Available actions are start, restart stop and kill.\n";
 }
 
-if ("start" eq $action) {
-   web_start();
-} elsif ("restart" eq $action) {
-   web_restart();
-} elsif ("stop" eq $action) {
-   web_stop();
-} elsif ("kill" eq $action) {
-   web_stop();
-   web_kill();
+$action = lc $action;    # normalize case
+$action =~ s/^\s+|\s+$//g; # trim whitespace
+
+my %dispatch = (
+    start   => \&web_start,
+    restart => \&web_restart,
+    stop    => \&web_stop,
+    kill    => sub {
+        web_stop();
+        web_kill();
+    },
+);
+
+if (my $handler = $dispatch{$action}) {
+    $handler->();
 } else {
-    die "Available actions are start, restart stop and kill.\n";
+    die "Available actions are: start, restart, stop, and kill.\n";
 }

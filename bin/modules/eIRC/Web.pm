@@ -126,8 +126,6 @@ sub start_daemon {
 }
 
 sub print_output {
-    cls();
-    splash();
     system('tail', '-n', '10', $supervisorLogFile);
 }
 
