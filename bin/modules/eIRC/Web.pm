@@ -11,7 +11,7 @@ use eIRC::Config qw(get_configuration);
 use eIRC::Utility qw(command_result is_pid_running splash);
 use Term::ANSIScreen qw(cls);
 
-our @EXPORT_OK = qw(web_start web_restart web_stop web_kill);
+our @EXPORT_OK = qw(web_start web_restart web_stop web_kill web_help);
 
 warn $@ if $@; # handle exception
 
@@ -38,6 +38,30 @@ my %cfg = get_configuration();
 # ====================================
 #    Subroutines below this point
 # ====================================
+
+# Displays help for available web actions.
+sub web_help {
+    print <<'EOF';
+Usage: web [ACTION]
+
+Manage the web service via the following actions:
+
+Examples:
+  web start              # Start the web service
+  web restart            # Restart the web service
+  web stop               # Stop the web service
+  web kill               # Stop service and the supervisor daemon (for config changes)
+  web help               # Show this help information
+
+ Main operation modes:
+  start                  Start the web service
+  restart                Restart the web service
+  stop                   Gracefully stop the web service
+  kill                   Stop service and supervisor daemon (for config changes)
+  help                   Display this help message
+
+EOF
+}
 
 # Runs the web manager supervisor.
 sub web_start {
