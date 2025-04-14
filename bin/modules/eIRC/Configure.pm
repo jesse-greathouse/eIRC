@@ -25,7 +25,7 @@ use eIRC::Config qw(
 use eIRC::Migrate qw(migrate);
 use eIRC::Utility qw(splash generate_rand_str write_file);
 
-our @EXPORT_OK = qw(configure);
+our @EXPORT_OK = qw(configure configure_help);
 
 warn $@ if $@; # handle exception
 
@@ -122,16 +122,40 @@ my %defaults = (
 #    Subroutines below this point
 # ====================================
 
+# Displays help for configure options.
+sub configure_help {
+    print <<'EOF';
+Usage: configure [--option]
+
+Sets up the eIRC configuration system. By default, the script runs in interactive mode.
+
+Examples:
+  configure                   # Run interactive configuration
+  configure --non-interactive # Run non-interactive mode using default or pre-defined values
+
+ Available options:
+  --non-interactive   Skip all interactive prompts (for automation)
+  help                Show this help message
+
+EOF
+}
+
 # Runs the main configuration routine.
 # This function is executed when the script is run.
 sub configure {
-    cls();
-    splash();
-    print "\n=================================================================\n";
-    print " This will create the eIRC configuration\n";
-    print "=================================================================\n\n";
+    my ($interactive_mode) = @_;
+    $interactive_mode = 1 unless defined $interactive_mode;
 
-    request_user_input();
+    if ($interactive_mode) {
+        cls();
+        splash();
+        print "\n=================================================================\n";
+        print " This will create the eIRC configuration\n";
+        print "=================================================================\n\n";
+
+        request_user_input();
+    }
+
     merge_defaults();
     assign_dynamic_config();
     save_configuration(%cfg);
@@ -145,8 +169,13 @@ sub configure {
     }
 
     write_laravel_env();
+    prompt_migrate() if $interactive_mode;
 
-    prompt_migrate();
+
+    unless ($interactive_mode) {
+        print "\nConfiguration completed in non-interactive mode.\n";
+        print "Note: If this is a fresh install, remember to run database migrations and seeders as needed.\n";
+    }
 }
 
 # Generates a Laravel application key if none exists.
