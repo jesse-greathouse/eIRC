@@ -9,6 +9,7 @@ use File::Touch;
 use Cwd qw(getcwd abs_path);
 use List::Util 1.29 qw(pairs);
 use Exporter 'import';
+use MIME::Base64 qw(encode_base64);
 use Scalar::Util qw(looks_like_number);
 use Term::Prompt;
 use Term::Prompt qw(termwrap);
@@ -24,7 +25,7 @@ use eIRC::Config qw(
 );
 use eIRC::Migrate qw(migrate);
 use eIRC::Seed qw(seed);
-use eIRC::PassportKeys qw(passport_keys);
+use eIRC::OAuthKeys qw(generate_oauth_keys);
 use eIRC::Utility qw(splash generate_rand_str write_file);
 
 our @EXPORT_OK = qw(configure configure_help);
@@ -48,12 +49,15 @@ my $tmpDir = "$applicationRoot/tmp";
 my $uploadDir = "$varDir/upload";
 my $cacheDir = "$varDir/cache";
 my $downloadDir = "$varDir/download";
+my $oautKeyPath = "$etcDir/ssl/oauth";
 
 # Files
 my $laravelEnvFile = "$applicationRoot/src/.env";
 my $errorLog = "$logDir/error.log";
 my $sslCertificate = "$etcDir/ssl/certs/eirc.cert";
 my $sslKey = "$etcDir/ssl/private/eirc.key";
+my $oauthPublicKey = "$oautKeyPath/oauth-public.key";
+my $oauthPrivateKey = "$oautKeyPath/oauth-private.key";
 
 # Default Supervisor control ports
 my $supervisorPort = 5959;
@@ -156,6 +160,7 @@ sub configure {
         print "=================================================================\n\n";
 
         request_user_input();
+        prompt_generate_oauth_keys();
     }
 
     merge_defaults();
@@ -175,15 +180,15 @@ sub configure {
     if ($interactive_mode) {
         prompt_migrate();
         prompt_seed();
-        prompt_change_encryption_keys();
     } else {
         print "\nConfiguration completed in non-interactive mode.\n";
         print "Note: If this is a fresh install, be sure to manually run the following commands as needed:\n";
         print "  bin/migrate         # Run database migrations\n";
         print "  bin/seed            # Seed the database with default values\n";
-        print "  bin/passport-keys   # Generate Laravel Passport encryption keys\n\n";
+        print "  bin/oauth-keys      # Generate OAuth encryption keys\n\n";
     }
 }
+
 
 # Generates a Laravel application key if none exists.
 # This is required for encrypting secure application data.
@@ -332,6 +337,7 @@ sub assign_dynamic_config {
     $cfg{laravel}{DOWNLOAD_DIR} //= $downloadDir;
     $cfg{laravel}{CACHE_DIR} //= $cacheDir;
     $cfg{laravel}{LOG_DIR} //= $logDir;
+    $cfg{laravel}{OAUTH_KEY_PATH} //= $oautKeyPath;
 
     # Redis configuration inheritance for Laravel
     $cfg{laravel}{REDIS_HOST} //= $cfg{redis}{REDIS_HOST} // $defaults{redis}{REDIS_HOST};
@@ -465,6 +471,8 @@ sub prompt_migrate {
 
     if ($answer eq 1) {
         migrate();
+    } else {
+        print "\n";
     }
 }
 
@@ -478,27 +486,41 @@ sub prompt_seed {
     print "Recommended after a fresh migration.\n\n";
     print "You can also run this manually later using: bin/seed\n\n";
 
-    my $answer = prompt('y', "Seed the Database?", '', "y");
+    my $answer = prompt('y', "Seed the Database?", '', "n");
 
     if ($answer eq 1) {
         seed();
+    } else {
+        print "\n";
     }
 }
 
-# Displays a prompt to the user asking whether to generate passport encryption keys.
-sub prompt_change_encryption_keys {
-    print "\n=================================================================\n";
-    print " Generate Encryption Keys\n";
-    print "=================================================================\n\n";
+# Displays a prompt to the user asking whether to generate OAuth RSA keys.
+sub prompt_generate_oauth_keys {
+    my $need_generate = (!-e $oauthPrivateKey or !-e $oauthPublicKey);
 
-    print "Encryption keys are required to issue secure access tokens.\n";
-    print "Warning: This will reset all existing logins and invalidate all API tokens.\n\n";
-    print "You can also run this manually later using: bin/passport-keys\n\n";
+    if ($need_generate) {
+        generate_oauth_keys($oauthPrivateKey, $oauthPublicKey);
+        print "\n";
+    } else {
+        print "\n=================================================================\n";
+        print " Generate OAuth Encryption Keys\n";
+        print "=================================================================\n\n";
 
-    my $answer = prompt('y', "Generate Laravel Passport Encryption Keys?", '', "y");
+        print "Encryption keys are required to issue secure access tokens.\n";
+        print "Warning: This will reset all existing logins and invalidate all API tokens.\n\n";
+        print "You can also run this manually later using: bin/oauth-keys\n\n";
 
-    if ($answer eq 1) {
-        passport_keys();
+        my $answer = prompt('y', "Generate new OAuth Encryption Keys?", '', "n");
+
+        if ($answer eq 1) {
+            generate_oauth_keys($oauthPrivateKey, $oauthPublicKey);
+        }
+    }
+
+    if (!-e $oauthPrivateKey or !-e $oauthPublicKey) {
+        die "Error: OAuth key files not found after generation.\n"
+          . "Please rerun this script and ensure keys are generated.\n";
     }
 }
 
