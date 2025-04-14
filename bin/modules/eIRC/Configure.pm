@@ -23,6 +23,8 @@ use eIRC::Config qw(
     write_config_file
 );
 use eIRC::Migrate qw(migrate);
+use eIRC::Seed qw(seed);
+use eIRC::PassportKeys qw(passport_keys);
 use eIRC::Utility qw(splash generate_rand_str write_file);
 
 our @EXPORT_OK = qw(configure configure_help);
@@ -169,12 +171,17 @@ sub configure {
     }
 
     write_laravel_env();
-    prompt_migrate() if $interactive_mode;
 
-
-    unless ($interactive_mode) {
+    if ($interactive_mode) {
+        prompt_migrate();
+        prompt_seed();
+        prompt_change_encryption_keys();
+    } else {
         print "\nConfiguration completed in non-interactive mode.\n";
-        print "Note: If this is a fresh install, remember to run database migrations and seeders as needed.\n";
+        print "Note: If this is a fresh install, be sure to manually run the following commands as needed:\n";
+        print "  bin/migrate         # Run database migrations\n";
+        print "  bin/seed            # Seed the database with default values\n";
+        print "  bin/passport-keys   # Generate Laravel Passport encryption keys\n\n";
     }
 }
 
@@ -445,14 +452,14 @@ sub input_integer {
 }
 
 # Displays a prompt to the user asking whether to run database migrations.
-# If the user confirms (defaulting to 'y'), the `migrate` function is called
-# to update the database schema to the latest design specification.
-sub prompt_migrate() {
+sub prompt_migrate {
     print "\n=================================================================\n";
     print " Database Migrations\n";
     print "=================================================================\n\n";
 
-     print "Now that your database is configured for use, update the database schema to the latest design spec.\n\n";
+    print "Now that your database is configured, you may update the schema to the latest design.\n";
+    print "This will apply all pending migrations.\n\n";
+    print "You can also run this manually later using: bin/migrate\n\n";
 
     my $answer = prompt('y', "Run Database Migrations?", '', "y");
 
@@ -460,5 +467,40 @@ sub prompt_migrate() {
         migrate();
     }
 }
+
+# Displays a prompt to the user asking whether to seed the database with default values.
+sub prompt_seed {
+    print "\n=================================================================\n";
+    print " Seed Default Data\n";
+    print "=================================================================\n\n";
+
+    print "Seed the database with default values such as roles, permissions, and initial settings.\n";
+    print "Recommended after a fresh migration.\n\n";
+    print "You can also run this manually later using: bin/seed\n\n";
+
+    my $answer = prompt('y', "Seed the Database?", '', "y");
+
+    if ($answer eq 1) {
+        seed();
+    }
+}
+
+# Displays a prompt to the user asking whether to generate passport encryption keys.
+sub prompt_change_encryption_keys {
+    print "\n=================================================================\n";
+    print " Generate Encryption Keys\n";
+    print "=================================================================\n\n";
+
+    print "Encryption keys are required to issue secure access tokens.\n";
+    print "Warning: This will reset all existing logins and invalidate all API tokens.\n\n";
+    print "You can also run this manually later using: bin/passport-keys\n\n";
+
+    my $answer = prompt('y', "Generate Laravel Passport Encryption Keys?", '', "y");
+
+    if ($answer eq 1) {
+        passport_keys();
+    }
+}
+
 
 1;
