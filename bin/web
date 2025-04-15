@@ -16,12 +16,18 @@ my %actions = (
         web_stop();
         web_kill();
     },
-    help    => \&web_help,,
+    help    => \&web_help,
 );
 
-# Entry point
-my $action = shift @ARGV || '';
+# Entry point: get action from first argument
+my $action = shift @ARGV // '';
 
+# Normalize common help aliases
+if ($action eq '--help' || $action eq '-h') {
+    $action = 'help';
+}
+
+# Dispatch or show help
 if (exists $actions{$action}) {
     $actions{$action}->();
 } else {
