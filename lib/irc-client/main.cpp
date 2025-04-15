@@ -16,9 +16,6 @@
 #include <asio.hpp>
 #include <memory>
 
-// Commands
-#include "Commands/InputCommand.hpp"
-
 // Event Handlers
 #include "EventHandlers/MotdEndHandler.hpp"
 #include "EventHandlers/NameReplyHandler.hpp"

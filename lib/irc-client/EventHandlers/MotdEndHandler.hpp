@@ -13,6 +13,10 @@ inline std::function<void(IRCClient &, const std::string &)> motdEndHandler()
 {
 	return [](IRCClient &client, const std::string &)
 	{
+		// Handles the "joinedChannels" list.
+		// User can select a list of channel names (joinedChannels) when connecting.
+		// Joining those channels should be delayed until the end of the MOTD.
+		// Joining channels before MOTD will result in failure!
 		client.joinChannels(client.getJoinedChannels());
 		client.setJoined(true);
 	};
