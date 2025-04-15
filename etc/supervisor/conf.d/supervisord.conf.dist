@@ -15,7 +15,7 @@ password=__SUPERVISORCTL_SECRET__
 [rpcinterface:supervisor]
 supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface
 
-[program:compile_irc-client]
+[program:jit_irc-client]
 process_name=%(ENV_APP_NAME)s_%(program_name)s
 environment=PATH="%(ENV_PATH)s:%(ENV_DIR)s/bin"
 directory=%(ENV_DIR)s
