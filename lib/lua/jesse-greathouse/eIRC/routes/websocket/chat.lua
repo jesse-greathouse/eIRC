@@ -1,5 +1,6 @@
 local api = require "jesse-greathouse.eIRC.api.client"
 local server = require "jesse-greathouse.eIRC.websocket.server"
+local token_store = require "jesse-greathouse.eIRC.stores.token_store"
 
 local _M = {}
 
@@ -8,22 +9,12 @@ function _M.route()
     local args = ngx.req.get_uri_args()
     local token = args.chat_token
 
-    if not token then
-        ngx.log(ngx.ERR, "❌ Missing chat_token arg")
-        ngx.status = 400
-        return ngx.exit(400)
+    local ok, err = token_store.get_binding(token, instance_id)
+    if not ok then
+        ngx.log(ngx.ERR, "❌ Token validation failed: ", err)
+        ngx.status = err == "Missing token" and 400 or 401
+        return ngx.exit(ngx.status)
     end
-
-    local dict = ngx.shared.token_binding
-    local existing = dict:get(token)
-
-    if existing and existing ~= instance_id then
-        ngx.log(ngx.ERR, "❌ Token reuse: bound to instance ", existing)
-        ngx.status = 401
-        return ngx.exit(401)
-    end
-
-    dict:set(token, instance_id, 180)
 
     local user, err = api.get_user_by_token(token)
     if not user then
@@ -32,10 +23,13 @@ function _M.route()
         return ngx.exit(500)
     end
 
+    local irc_host = os.getenv("IRC_SERVER_HOST") or "127.0.0.1"
+    local irc_port = tonumber(os.getenv("IRC_SERVER_PORT")) or 6667
+
     server.run(
         user.nick,
-        "127.0.0.1",
-        6667,
+        irc_host,
+        irc_port,
         user.channels or "",
         instance_id
     )

@@ -115,6 +115,8 @@ my %defaults = (
         PORT                        => '8181',
         SSL_CERT                    => $sslCertificate,
         SSL_KEY                     => $sslKey,
+        IRC_SERVER_HOST             => '127.0.0.1',
+        IRC_SERVER_PORT             => '6667',
     },
     redis => {
         REDIS_HOST                  => '/var/run/redis/redis.sock',
@@ -263,6 +265,8 @@ sub request_user_input {
         ['nginx', 'PORT', 'Web Server Port'],
         ['nginx', 'SSL_CERT', 'SSL Certificate Path'],
         ['nginx', 'SSL_KEY', 'SSL Key Path'],
+        ['nginx', 'IRC_SERVER_HOST', 'IRC Server Host'],
+        ['nginx', 'IRC_SERVER_PORT', 'IRC Server Port'],
 
         # Redis settings
         ['redis', 'REDIS_HOST', 'Redis Host'],

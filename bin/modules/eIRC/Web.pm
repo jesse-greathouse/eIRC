@@ -136,10 +136,16 @@ sub web_kill {
 
 # Starts the supervisor daemon.
 sub start_daemon {
-    @ENV{qw(APP_URL USER BIN DIR ETC OPT TMP VAR SRC WEB CACHE_DIR LOG_DIR PORT SSL REDIS_HOST APP_NAME)} =
-        ($cfg{nginx}{APP_URL}, $user, $binDir, $applicationRoot, $etcDir, $optDir, $tmpDir, $varDir, $srcDir, $webDir,
-        $cacheDir, $logDir, $cfg{nginx}{PORT}, $cfg{nginx}{IS_SSL}, $cfg{redis}{REDIS_HOST},
-        $cfg{laravel}{APP_NAME});
+    @ENV{qw(
+        APP_URL USER BIN DIR ETC OPT TMP VAR SRC WEB
+        CACHE_DIR LOG_DIR PORT SSL REDIS_HOST APP_NAME
+        IRC_SERVER_HOST IRC_SERVER_PORT
+    )} = (
+        $cfg{nginx}{APP_URL}, $user, $binDir, $applicationRoot, $etcDir, $optDir,
+        $tmpDir, $varDir, $srcDir, $webDir, $cacheDir, $logDir,
+        $cfg{nginx}{PORT}, $cfg{nginx}{IS_SSL}, $cfg{redis}{REDIS_HOST},
+        $cfg{laravel}{APP_NAME}, $cfg{nginx}{IRC_SERVER_HOST}, $cfg{nginx}{IRC_SERVER_PORT}
+    );
 
     print "Starting Web Daemon...\n";
 

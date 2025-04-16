@@ -13,31 +13,63 @@ local function get_app_url()
     return url:gsub("/+$", "")
 end
 
--- Generic GET request that returns a decoded Lua object
-function _M.get(endpoint)
+-- Generic HTTP request handler
+local function send_request(method, endpoint, body)
     local base_url, err = get_app_url()
     if not base_url then return nil, err end
 
     local httpc = http.new()
-    local res, err = httpc:request_uri(base_url .. endpoint, {
-        method = "GET",
-        headers = { ["Accept"] = "application/json" }
-    })
+    local opts = {
+        method = method,
+        headers = {
+            ["Accept"] = "application/json",
+        }
+    }
+
+    if body then
+        opts.headers["Content-Type"] = "application/json"
+        opts.body = cjson.encode(body)
+    end
+
+    local res, err = httpc:request_uri(base_url .. endpoint, opts)
 
     if not res then
         return nil, "API request failed: " .. (err or "unknown error")
     end
 
-    if res.status ~= 200 then
+    if res.status < 200 or res.status >= 300 then
         return nil, "API returned status " .. res.status .. ": " .. (res.body or "")
     end
 
-    local ok, decoded = pcall(cjson.decode, res.body)
-    if not ok then
-        return nil, "Failed to decode JSON: " .. tostring(res.body)
+    if res.body and res.body ~= "" then
+        local ok, decoded = pcall(cjson.decode, res.body)
+        if not ok then
+            return nil, "Failed to decode JSON: " .. tostring(res.body)
+        end
+        return decoded
     end
 
-    return decoded
+    return true  -- Return true for empty success response (e.g., DELETE 204)
+end
+
+-- GET request
+function _M.get(endpoint)
+    return send_request("GET", endpoint)
+end
+
+-- POST with JSON body
+function _M.post(endpoint, body)
+    return send_request("POST", endpoint, body)
+end
+
+-- PUT with JSON body
+function _M.put(endpoint, body)
+    return send_request("PUT", endpoint, body)
+end
+
+-- DELETE request (usually no body)
+function _M.delete(endpoint)
+    return send_request("DELETE", endpoint)
 end
 
 -- Specific alias using the generic `get` under the hood
