@@ -1,24 +1,17 @@
-local http = require "resty.http"
+local resty_http = require "resty.http"
 local cjson = require "cjson"
+local env = require "jesse-greathouse.eIRC.env"
 
 local _M = {}
 
--- Gets the base URL from Nginx environment variables
-local function get_app_url()
-    local url = ngx.var.APP_URL
-    if not url or url == "" then
-        ngx.log(ngx.ERR, "❌ APP_URL environment variable is missing or empty")
-        return nil, "Missing APP_URL"
-    end
-    return url:gsub("/+$", "")
-end
-
 -- Generic HTTP request handler
 local function send_request(method, endpoint, body)
-    local base_url, err = get_app_url()
-    if not base_url then return nil, err end
+    local base_url = env.app_url()
+    if not base_url then
+        return nil, "Missing APP_URL"
+    end
 
-    local httpc = http.new()
+    local httpc = resty_http.new()
     local opts = {
         method = method,
         headers = {
@@ -49,30 +42,14 @@ local function send_request(method, endpoint, body)
         return decoded
     end
 
-    return true  -- Return true for empty success response (e.g., DELETE 204)
+    return true
 end
 
--- GET request
-function _M.get(endpoint)
-    return send_request("GET", endpoint)
-end
+function _M.get(endpoint) return send_request("GET", endpoint) end
+function _M.post(endpoint, body) return send_request("POST", endpoint, body) end
+function _M.put(endpoint, body) return send_request("PUT", endpoint, body) end
+function _M.delete(endpoint) return send_request("DELETE", endpoint) end
 
--- POST with JSON body
-function _M.post(endpoint, body)
-    return send_request("POST", endpoint, body)
-end
-
--- PUT with JSON body
-function _M.put(endpoint, body)
-    return send_request("PUT", endpoint, body)
-end
-
--- DELETE request (usually no body)
-function _M.delete(endpoint)
-    return send_request("DELETE", endpoint)
-end
-
--- Specific alias using the generic `get` under the hood
 function _M.get_user_by_token(token)
     return _M.get("/api/auth/user/" .. token)
 end
