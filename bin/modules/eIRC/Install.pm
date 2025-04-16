@@ -98,7 +98,7 @@ sub install {
     }
 
     if ($options{'openresty'}) {
-        #install_openresty($applicationRoot);
+        install_openresty($applicationRoot);
         install_lualib($applicationRoot)
     }
 
