@@ -164,6 +164,7 @@ sub configure {
     }
 
     merge_defaults();
+    generate_personal_access_client($interactive_mode);
     assign_dynamic_config();
     save_configuration(%cfg);
 
@@ -355,6 +356,7 @@ sub assign_dynamic_config {
     $cfg{php_fpm}{USER} //= $ENV{"LOGNAME"};
 
     # Ensure Nginx configuration consistency
+    $cfg{nginx}{APP_URL} //= $cfg{laravel}{APP_URL};
     $cfg{nginx}{DOMAINS} //= $cfg{laravel}{SESSION_DOMAIN};
     $cfg{nginx}{LOG} //= $errorLog;
     $cfg{nginx}{DIR} //= $applicationRoot;
@@ -523,6 +525,73 @@ sub prompt_generate_oauth_keys {
           . "Please rerun this script and ensure keys are generated.\n";
     }
 }
+
+# Automatically creates a Laravel Passport personal access client if not already configured,
+# or allows the user to recreate it (invalidating existing tokens).
+sub generate_personal_access_client {
+    my ($interactive_mode) = @_;
+
+    my $existing_id     = $cfg{laravel}{PASSPORT_PERSONAL_ACCESS_CLIENT_ID};
+    my $existing_secret = $cfg{laravel}{PASSPORT_PERSONAL_ACCESS_CLIENT_SECRET};
+
+    if ($interactive_mode && $existing_id && $existing_secret) {
+        print "\n=================================================================\n";
+        print " Personal Access Client\n";
+        print "=================================================================\n\n";
+
+        print "A personal access client is already configured (Client ID: $existing_id).\n";
+        print "If you recreate it, all existing personal access tokens will be invalidated.\n\n";
+
+        my $answer = prompt('y', "Regenerate Personal Access Client?", '', "n");
+        return if $answer ne 'yes';
+
+        print "Creating a new Laravel Passport personal access client...\n";
+    }
+
+    if (!$interactive_mode && $existing_id && $existing_secret) {
+        return;  # Don't regenerate if running non-interactive and values already exist
+    }
+
+    my $tmpfile = "$tmpDir/personal_access_client.txt";
+    unlink $tmpfile if -e $tmpfile;
+
+    # Run the Artisan command and pipe stdout to a temp file
+    my $cmd = "$binDir/php $srcDir/artisan passport:client --personal --name=\"Personal Access Client\" > $tmpfile";
+    my $exit_code = system($cmd);
+    if ($exit_code != 0) {
+        die "Error: Failed to create Personal Access Client. Command: $cmd\n";
+    }
+
+    # Read and parse output
+    open my $fh, '<', $tmpfile or die "Failed to read output file: $tmpfile\n";
+    my ($client_id, $client_secret);
+    while (my $line = <$fh>) {
+        chomp $line;
+        print "$line\n";
+
+        # Match new Passport client ID format (UUID)
+        if ($line =~ /Client ID\s+\.+\s+([a-f0-9\-]{36})/i) {
+            $client_id = $1;
+        }
+
+        # Match new secret format
+        if ($line =~ /Client secret\s+\.+\s+([A-Za-z0-9]+)/) {
+            $client_secret = $1;
+        }
+    }
+    close $fh;
+    unlink $tmpfile;
+
+    unless ($client_id && $client_secret) {
+        die "Failed to parse personal access client ID and secret from artisan output.\n";
+    }
+
+    print "Created personal access client with ID: $client_id\n";
+
+    $cfg{laravel}{PASSPORT_PERSONAL_ACCESS_CLIENT_ID}     = $client_id;
+    $cfg{laravel}{PASSPORT_PERSONAL_ACCESS_CLIENT_SECRET} = $client_secret;
+}
+
 
 
 1;

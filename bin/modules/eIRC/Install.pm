@@ -4,7 +4,7 @@ package eIRC::Install;
 use strict;
 use File::Basename;
 use File::Copy;
-use File::Path qw(make_path);
+use File::Path qw(make_path rmtree);
 use Getopt::Long;
 use Cwd qw(getcwd abs_path);
 use lib(dirname(abs_path(__FILE__))  . "/modules");
@@ -98,7 +98,8 @@ sub install {
     }
 
     if ($options{'openresty'}) {
-        install_openresty($applicationRoot);
+        #install_openresty($applicationRoot);
+        install_lualib($applicationRoot)
     }
 
     if ($options{'php'}) {
@@ -236,6 +237,44 @@ sub install_openresty {
     # install OpenResty core
     system(('make', 'install'));
     command_result($?, $!, 'Install (Openresty)...', 'make install');
+
+    chdir $originalDir;
+}
+
+# Adds lua libraries
+sub install_lualib {
+    my ($dir) = @_;
+    my $luaRestyHttpVersion = 'v0.17.2';
+    my $luaRestyOpensslVersion = '1.6.1';
+    my $originalDir = getcwd();
+    my $luaLibDir = glob("$dir/opt/openresty/lualib/resty");
+    my $luaLibHttpDir = glob("$luaLibDir/lua-resty-http");
+    my $luaLibOpensslDir = glob("$luaLibDir/lua-resty-openssl");
+
+    chdir $luaLibDir;
+
+    if (-d $luaLibHttpDir) {
+        rmtree($luaLibHttpDir) or die "Cannot remove '$luaLibHttpDir' : $!";
+    }
+
+    if (-d $luaLibOpensslDir) {
+        rmtree($luaLibOpensslDir) or die "Cannot remove '$luaLibOpensslDir' : $!";
+    }
+
+    # lua-resty-http
+    system("git clone --depth 1 --branch $luaRestyHttpVersion https://github.com/ledgetech/lua-resty-http.git");
+
+    copy("$luaLibHttpDir/lib/resty/http.lua", "$luaLibDir/http.lua");
+    copy("$luaLibHttpDir/lib/resty/http_connect.lua", "$luaLibDir/http_connect.lua");
+    copy("$luaLibHttpDir/lib/resty/http_headers.lua", "$luaLibDir/http_headers.lua");
+    rmtree($luaLibHttpDir) or die "Cannot remove '$luaLibHttpDir' : $!";
+
+    # lua-resty-openssl
+    system("git clone --depth 1 --branch $luaRestyOpensslVersion https://github.com/fffonion/lua-resty-openssl.git");
+
+    copy("$luaLibOpensslDir/lib/resty/openssl.lua", "$luaLibDir/openssl.lua");
+    move("$luaLibOpensslDir/lib/resty/openssl", "$luaLibDir/openssl");
+    rmtree($luaLibOpensslDir) or die "Cannot remove '$luaLibOpensslDir' : $!";
 
     chdir $originalDir;
 }

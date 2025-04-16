@@ -22,6 +22,21 @@
 #include "EventHandlers/PingHandler.hpp"
 #include "EventHandlers/WhoisHandler.hpp"
 
+// Add new handlers here:
+// return {
+//     {IRCEventKey::PrivMsg, {
+//          channelMsgHandler(),
+//          userToUserMsgHandler(),
+//      }},
+//     {IRCEventKey::Notice, {
+//          noticeHandler(),
+//      }},
+//     {IRCEventKey::MotdEnd, {motdEndHandler()}},
+//     {IRCEventKey::RplNameReply, {nameReplyHandler()}},
+//     {IRCEventKey::Ping, {pingHandler()}},
+//     {IRCEventKey::Whois, {whoisHandler()}},
+// };
+
 std::map<std::string, std::vector<std::function<void(IRCClient &, const std::string &)>>> buildHandlers()
 {
     return {
