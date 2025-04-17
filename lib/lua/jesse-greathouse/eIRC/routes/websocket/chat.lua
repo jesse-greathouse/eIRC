@@ -14,13 +14,13 @@ function _M.route()
     -- validations
     if not token then
         ngx.log(ngx.ERR, "❌ Missing chat_token query param")
-        return http.exit(400, "Missing chat_token")
+        return http.exit(400, "Missing Token")
     end
 
     local ok, err = token_store.get_binding(token)
     if not ok then
         ngx.log(ngx.ERR, "❌ Token validation failed: ", err)
-        return http.exit(err == "Token validation failed" and 400 or 401, err)
+        return http.exit(err == "Token validation failed" and 400 or 401, "Unauthorized Token: " .. err)
     end
 
     local user, err = api.get_user_by_token(token)

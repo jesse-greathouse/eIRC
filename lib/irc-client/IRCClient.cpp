@@ -215,15 +215,10 @@ void IRCClient::readLoop(const std::vector<std::string> &channels)
         while ((pos = buffer.find("\n")) != std::string::npos)
         {
             std::string line = buffer.substr(0, pos);
+            if (!line.empty() && line.back() == '\r')
+                line.pop_back(); // remove trailing \r from the line
 
-            if (pos > 0 && buffer[pos - 1] == '\r')
-            {
-                buffer.erase(0, pos + 1); // remove \r\n
-            }
-            else
-            {
-                buffer.erase(0, pos + 1); // remove \n only
-            }
+            buffer.erase(0, pos + 1); // remove the whole line + \n from buffer
 
             logger.log(line);
             ui.drawOutput(line);
