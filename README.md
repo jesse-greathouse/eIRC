@@ -4,7 +4,7 @@
 
 **eIRC** is a modern, vertically-scalable enterprise messaging architecture built on the IRC protocol. Designed for organizations that require ephemeral, real-time communication without the heavy operational overhead of pub/sub systems like Apache Kafka, eIRC delivers high-throughput, low-latency chat experiences while minimizing memory and CPU usage per user.
 
-![eIRC Architecture Diagram](https://i.imgur.com/36HrlLN.png)
+![eIRC Architecture Diagram](https://i.imgur.com/d5CblBK.png)
 
 The system is composed of three core architectural tiers:
 
