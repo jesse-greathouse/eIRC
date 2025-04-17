@@ -1,0 +1,34 @@
+<svg viewBox="0 0 240 140" xmlns="http://www.w3.org/2000/svg">
+  <rect width="240" height="140" fill="black" />
+
+  <!-- Distorted boombox body -->
+  <path d="M10 30 Q12 18 28 20 H212 Q228 18 230 30 V100 Q228 112 212 110 H28 Q12 112 10 100 Z" fill="white"/>
+  <path d="M18 38 Q20 30 28 30 H212 Q220 30 222 38 V92 Q220 100 212 100 H28 Q20 100 18 92 Z" fill="black"/>
+
+  <!-- Left speaker -->
+  <circle cx="50" cy="70" r="32" fill="white"/>
+  <circle cx="50" cy="70" r="18" fill="black"/>
+  <!-- Right speaker -->
+  <circle cx="190" cy="70" r="32" fill="white"/>
+  <circle cx="190" cy="70" r="18" fill="black"/>
+
+  <!-- Squiggly sound lines -->
+  <path d="M15 50 Q10 70 15 90" stroke="white" stroke-width="2" fill="none"/>
+  <path d="M25 45 Q20 70 25 95" stroke="white" stroke-width="2" fill="none"/>
+  <path d="M225 50 Q230 70 225 90" stroke="white" stroke-width="2" fill="none"/>
+  <path d="M215 45 Q220 70 215 95" stroke="white" stroke-width="2" fill="none"/>
+
+  <!-- Handle -->
+  <path d="M80 12 Q100 0 120 6 Q140 0 160 12" stroke="white" stroke-width="4" fill="none"/>
+
+  <!-- BIG graffiti-style eIRC, tilted and bold -->
+  <text x="120" y="80"
+        font-family="Comic Sans MS, Marker Felt, cursive"
+        font-size="42"
+        text-anchor="middle"
+        transform="rotate(-5 120 80)"
+        style="letter-spacing: 1px;">
+    <tspan fill="#1fa643">e</tspan>
+    <tspan dx="-18" fill="white">IRC</tspan>
+  </text>
+</svg>
