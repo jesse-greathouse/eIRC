@@ -5,6 +5,13 @@
 **eIRC** is a modern, vertically-scalable enterprise messaging architecture built on the IRC protocol. Designed for organizations that require ephemeral, real-time communication without the heavy operational overhead of pub/sub systems like Apache Kafka, eIRC delivers high-throughput, low-latency chat experiences while minimizing memory and CPU usage per user.
 
 ![eIRC Architecture Diagram](https://i.imgur.com/d5CblBK.png)
+_<small>The architecture is represented using a C4 Container Diagram.</small>_
+
+---
+
+## 📌 About eIRC: [An Enterprise Chat System Based on IRC](https://raw.githubusercontent.com/jesse-greathouse/eIRC/refs/heads/main/eIRC-Enterprise-chat-system-based-on-IRC.pdf)
+
+## 📌 eIRC Technical Specs [Technical Architecture Overview](https://raw.githubusercontent.com/jesse-greathouse/eIRC/refs/heads/main/eIRC-Technical-Architecture-Overview.pdf)
 
 The system is composed of three core architectural tiers:
 
@@ -13,19 +20,6 @@ The system is composed of three core architectural tiers:
 3. **Infrastructure Services** (IRC server, Laravel-based backend, persistent database)
 
 This whitepaper outlines the full technical architecture, component responsibilities, communication paths, deployment model, and scalability considerations.
-
----
-
-## Architecture Diagram
-
-The architecture is represented using a C4 Container Diagram. The core containers include:
-
-- Browser Client
-- WebSocket Server (OpenResty + Lua)
-- IRC Client (C++)
-- IRC Server (InspIRCd)
-- Laravel Backend (PHP + Inertia)
-- PostgreSQL or MySQL database
 
 ---
 
