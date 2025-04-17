@@ -11,6 +11,7 @@ function _M.route()
     local args = ngx.req.get_uri_args()
     local token = args.chat_token
 
+    -- validations
     if not token then
         ngx.log(ngx.ERR, "❌ Missing chat_token query param")
         return http.exit(400, "Missing chat_token")
@@ -19,22 +20,17 @@ function _M.route()
     local ok, err = token_store.get_binding(token)
     if not ok then
         ngx.log(ngx.ERR, "❌ Token validation failed: ", err)
-        return http.exit(err == "Missing token" and 400 or 401, err)
+        return http.exit(err == "Token validation failed" and 400 or 401, err)
     end
 
     local user, err = api.get_user_by_token(token)
     if not user then
-        ngx.log(ngx.ERR, "❌ Token User Mismatch: ", token)
+        ngx.log(ngx.ERR, "❌ Token User Mismatch: " .. token, err)
         return http.exit(500, "Token User Mismatch: " .. token)
     end
 
-    server.run(
-        user.nick,
-        env.irc_host(),
-        env.irc_port(),
-        user.channels or "",
-        instance_id
-    )
+    -- connect to headless irc client
+    server.run(user.nick, env.irc_host(), env.irc_port(), user.channels or "", instance_id)
 end
 
 return _M
