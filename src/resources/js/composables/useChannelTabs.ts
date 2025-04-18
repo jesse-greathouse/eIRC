@@ -1,16 +1,9 @@
-// src/resources/js/composables/useChannelTabs.ts
 import { ref } from 'vue';
-
-interface ChannelTab {
-    id: string;       // "channel-<name>"
-    label: string;    // "#<name>"
-    name: string;     // raw name (e.g. "general")
-}
+import type { ChannelTab } from '@/types/chat';
 
 const channels = ref<ChannelTab[]>([]);
 
 export function useChannelTabs() {
-
     function addChannel(name: string) {
         const id = `channel-${name}`;
         if (!channels.value.find(c => c.id === id)) {

@@ -1,10 +1,5 @@
 import { ref } from 'vue';
-
-interface PrivmsgTab {
-    id: string;       // "pm-<nick>"
-    label: string;    // "Private: <nick>"
-    nick: string;     // raw nickname
-}
+import type { PrivmsgTab } from '@/types/chat';
 
 const privmsgs = ref<PrivmsgTab[]>([]);
 

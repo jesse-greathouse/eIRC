@@ -38,4 +38,9 @@ export interface User {
 
 export type BreadcrumbItemType = BreadcrumbItem;
 
-export type { ChatTab } from './chat';
+export type { ChatTab, ChannelTab, PrivmsgTab } from './chat';
+
+// Temporarily reverting to d.ts style until IDE resolution is fixed
+// Don't export class-based types from here
+// Instead, import them from their file as needed
+// export type { IrcLine, IrcLineSerialized } from './IrcLine';

@@ -1,0 +1,7 @@
+export const IRC_EVENT_KEYS = {
+    PING: 'PING',
+    RPL_NAMEREPLY: 'RPL_NAMEREPLY',
+    MOTD_END: 'MOTD_END',
+    PRIVMSG: 'PRIVMSG',
+    WHOIS: 'WHOIS',
+};

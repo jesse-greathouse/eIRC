@@ -1,78 +1,45 @@
 <script setup lang="ts">
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { Head } from '@inertiajs/vue3';
+
 import { type BreadcrumbItem } from '@/types';
 import type { ChatTab } from '@/types/chat';
-
+import { parseIrcLine } from '@/lib/parseIrcLine';
+import { getTabKey } from '@/lib/getTabKey';
 import AppLayout from '@/layouts/AppLayout.vue';
-import PlaceholderPattern from '../components/PlaceholderPattern.vue';
 import ContextMenu from '@/components/nav/ChatContextMenu.vue';
 import ConsolePane from '@/components/chat/ConsolePane.vue';
 import ChannelPane from '@/components/chat/ChannelPane.vue';
 import PrivmsgPane from '@/components/chat/PrivmsgPane.vue';
-import { useChannelTabs } from '@/composables/useChannelTabs';
-import { usePrivmsgTabs } from '@/composables/usePrivmsgTabs';
+import { useChatTabs } from '@/composables/useChatTabs';
+import { useWebSocket } from '@/composables/useWebSocket';
+import { useIrcLines } from '@/composables/useIrcLines';
 
-import { ref, computed, onMounted, nextTick } from 'vue';
-import { Head } from '@inertiajs/vue3';
-
-const { channels, addChannel } = useChannelTabs();
-const { privmsgs, addPrivmsgUser } = usePrivmsgTabs();
-
-function trackRef(id: string) {
-    const key = id.replace(/^channel-/, '').replace(/^pm-/, '');
-    if (!tabTargets.has(key)) {
-        tabTargets.set(key, ref<HTMLElement | null>(null));
+function getTabKey(line: IrcLine): string {
+    try {
+        if (line.command === 'PRIVMSG' && line.params[0]?.startsWith('#')) {
+            return `channel-${line.params[0]}`;
+        } else if (line.command === 'PRIVMSG') {
+            return `pm-${line.prefix?.split('!')[0] || 'unknown'}`;
+        }
+    } catch (e) {
+        console.error('[getTabKey] failed for line:', line, e);
     }
+    return 'console';
 }
 
-function addDynamicChannel(name: string) {
-    trackRef(`channel-${name}`);
-    addChannel(name);
-}
-
-function addDynamicPrivmsg(nick: string) {
-    trackRef(`pm-${nick}`);
-    addPrivmsgUser(nick);
-}
-
-defineProps<{
+const { chat_token } = defineProps<{
     chat_token: string;
 }>();
 
+// Set up BreadCrumbs
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Chat', href: '/chat' },
 ];
 
-const tabTriggers = {
-    console: { id: 'console', label: 'Console' },
-    ...channels.value,
-    ...privmsgs.value,
-};
-
-// Tab targets will be created and removed on demand.
-const tabTargets = new Map<string, Ref<HTMLElement | null>>();
-
-const consoleTab: ChatTab = {
-    id: 'console',
-    label: 'Console',
-    component: ConsolePane,
-};
-
-const chatTabs = computed<ChatTab[]>(() => [
-    consoleTab,
-    ...channels.value.map(name => ({
-        id: `channel-${name}`,
-        label: `#${name}`,
-        component: ChannelPane,
-    })),
-    ...privmsgs.value.map(nick => ({
-        id: `pm-${nick}`,
-        label: `Private: ${nick}`,
-        component: PrivmsgPane,
-    })),
-]);
-
+// Set up Tabs
+const { chatTabs, tabTargets } = useChatTabs();
 const activeTab = ref('console');
-
 function switchTab(tabId: string) {
     activeTab.value = tabId;
 
@@ -84,9 +51,26 @@ function switchTab(tabId: string) {
         }
     });
 }
+const currentPane = computed(() => {
+    const tab = chatTabs.value.find(t => t.id === activeTab.value);
+    return tab?.component ?? ConsolePane;
+});
 
-const currentTab = computed(() => chatTabs.value.find(tab => tab.id === activeTab.value));
-const CurrentPane = computed(() => currentTab.value?.component ?? ConsolePane);
+// Set up Websocket i/o
+const { lines, addLinesTo } = useIrcLines();
+const { connect, send, disconnect } = useWebSocket(
+    `ws://${location.hostname}:9667/?chat_token=${chat_token}`,
+    (rawLine) => {
+        const parsed = parseIrcLine(rawLine);
+        const target = getTabKey(parsed);
+        console.log(parsed.toObject());
+        addLinesTo(target, [parsed]);
+    }
+);
+
+onMounted(connect);
+onBeforeUnmount(disconnect);
+
 </script>
 
 <template>
@@ -103,7 +87,7 @@ const CurrentPane = computed(() => currentTab.value?.component ?? ConsolePane);
 
             <!-- Main Chat Pane -->
             <div class="flex-1 flex flex-col h-full min-h-0 overflow-hidden">
-                <component :is="CurrentPane" />
+                <component :is="currentPane" :lines="lines" />
             </div>
         </div>
     </AppLayout>
