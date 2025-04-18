@@ -1,7 +1,9 @@
+/* Tailwind layers */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* Optional: additional base overrides */
 body,
 html {
     --font-sans:

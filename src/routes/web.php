@@ -6,10 +6,6 @@ use Illuminate\Support\Facades\Route,
 use App\Http\Controllers\ChatController;
 
 Route::get('/', function () {
-    return Inertia::render('Welcome');
-})->name('home');
-
-Route::get('dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 

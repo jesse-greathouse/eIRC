@@ -37,3 +37,5 @@ export interface User {
 }
 
 export type BreadcrumbItemType = BreadcrumbItem;
+
+export type { ChatTab } from './chat';
