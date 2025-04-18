@@ -4,4 +4,6 @@ export const IRC_EVENT_KEYS = {
     MOTD_END: 'MOTD_END',
     PRIVMSG: 'PRIVMSG',
     WHOIS: 'WHOIS',
+    JOIN: 'JOIN',
+    WELCOME: '001',
 };

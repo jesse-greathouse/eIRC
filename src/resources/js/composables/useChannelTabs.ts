@@ -7,7 +7,8 @@ export function useChannelTabs() {
     function addChannel(name: string) {
         const id = `channel-${name}`;
         if (!channels.value.find(c => c.id === id)) {
-            channels.value.push({ id, label: `#${name}`, name });
+            const label = name.startsWith('#') ? name : `#${name}`;
+            channels.value.push({id, label, name});
         }
     }
 

@@ -1,14 +1,17 @@
 import { IrcLine } from '@/types/IrcLine';
-import type { IrcEventHandler } from './types';
+import type { IrcEventHandler, IrcClientOptions } from './types';
 import { IRC_EVENT_KEYS } from './constants';
 
 export class IrcClient {
     private eventHandlers = new Map<string, IrcEventHandler[]>();
     private joinedChannels = new Set<string>();
 
+    public nick: string = '';
+
     constructor(
         private readonly log: (msg: string) => void,
         private readonly draw: (line: IrcLine) => void,
+        public readonly opts: IrcClientOptions = {}
     ) {}
 
     addEventHandler(event: string, handler: IrcEventHandler) {

@@ -6,43 +6,33 @@ import { type BreadcrumbItem } from '@/types';
 import type { ChatTab } from '@/types/chat';
 import { parseIrcLine } from '@/lib/parseIrcLine';
 import { getTabKey } from '@/lib/getTabKey';
+
 import AppLayout from '@/layouts/AppLayout.vue';
 import ContextMenu from '@/components/nav/ChatContextMenu.vue';
 import ConsolePane from '@/components/chat/ConsolePane.vue';
 import ChannelPane from '@/components/chat/ChannelPane.vue';
 import PrivmsgPane from '@/components/chat/PrivmsgPane.vue';
+
 import { useChatTabs } from '@/composables/useChatTabs';
 import { useWebSocket } from '@/composables/useWebSocket';
 import { useIrcLines } from '@/composables/useIrcLines';
 
-function getTabKey(line: IrcLine): string {
-    try {
-        if (line.command === 'PRIVMSG' && line.params[0]?.startsWith('#')) {
-            return `channel-${line.params[0]}`;
-        } else if (line.command === 'PRIVMSG') {
-            return `pm-${line.prefix?.split('!')[0] || 'unknown'}`;
-        }
-    } catch (e) {
-        console.error('[getTabKey] failed for line:', line, e);
-    }
-    return 'console';
-}
+import { IrcClient } from '@/irc/IrcClient';
+import { buildHandlers } from '@/irc/buildHandlers';
 
-const { chat_token } = defineProps<{
-    chat_token: string;
-}>();
+const { chat_token } = defineProps<{ chat_token: string }>();
 
-// Set up BreadCrumbs
+// Breadcrumbs
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Chat', href: '/chat' },
 ];
 
-// Set up Tabs
-const { chatTabs, tabTargets } = useChatTabs();
+// Tab management
+const { chatTabs, tabTargets, addChannelTab, addPrivmsgTab } = useChatTabs();
 const activeTab = ref('console');
+
 function switchTab(tabId: string) {
     activeTab.value = tabId;
-
     nextTick(() => {
         const key = tabId.replace(/^channel-/, '').replace(/^pm-/, '');
         const elRef = tabTargets.get(key);
@@ -51,26 +41,47 @@ function switchTab(tabId: string) {
         }
     });
 }
+
 const currentPane = computed(() => {
     const tab = chatTabs.value.find(t => t.id === activeTab.value);
     return tab?.component ?? ConsolePane;
 });
 
-// Set up Websocket i/o
+// IRC message buffer
 const { lines, addLinesTo } = useIrcLines();
+
+const ircClient = new IrcClient(
+    (msg) => console.log(`[IRC] ${msg}`),
+    (line) => {
+        const target = getTabKey(line);
+        addLinesTo(target, [line]);
+    },
+    {
+        onJoinChannel: (channel) => {
+            addChannelTab(channel);
+        },
+        onPrivmsg: (nick) => {
+            addPrivmsgTab(nick);
+        },
+    }
+);
+
+// Register handlers
+Object.entries(buildHandlers()).forEach(([event, handlers]) => {
+    handlers.forEach(h => ircClient.addEventHandler(event, h));
+});
+
+// WebSocket connection
 const { connect, send, disconnect } = useWebSocket(
     `ws://${location.hostname}:9667/?chat_token=${chat_token}`,
     (rawLine) => {
         const parsed = parseIrcLine(rawLine);
-        const target = getTabKey(parsed);
-        console.log(parsed.toObject());
-        addLinesTo(target, [parsed]);
+        ircClient.handleLine(parsed);
     }
 );
 
 onMounted(connect);
 onBeforeUnmount(disconnect);
-
 </script>
 
 <template>
