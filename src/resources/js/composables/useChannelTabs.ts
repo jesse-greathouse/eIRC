@@ -8,7 +8,7 @@ export function useChannelTabs() {
         const id = `channel-${name}`;
         if (!channels.value.find(c => c.id === id)) {
             const label = name.startsWith('#') ? name : `#${name}`;
-            channels.value.push({id, label, name});
+            channels.value.push({ id, label, name });
         }
     }
 

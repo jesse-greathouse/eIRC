@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { ref, computed, reactive, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { Head } from '@inertiajs/vue3';
 
 import { type BreadcrumbItem } from '@/types';
@@ -20,16 +20,9 @@ import { useIrcLines } from '@/composables/useIrcLines';
 import { IrcClient } from '@/irc/IrcClient';
 import { buildHandlers } from '@/irc/buildHandlers';
 
-const { chat_token } = defineProps<{ chat_token: string }>();
-
-// Breadcrumbs
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Chat', href: '/chat' },
-];
-
-// Tab management
-const { chatTabs, tabTargets, addChannelTab, addPrivmsgTab } = useChatTabs();
-const activeTab = ref('console');
+function registerComponentForTab(id: string, component: any) {
+    tabComponentMap[id] = component;
+}
 
 function switchTab(tabId: string) {
     activeTab.value = tabId;
@@ -42,13 +35,27 @@ function switchTab(tabId: string) {
     });
 }
 
-const currentPane = computed(() => {
-    const tab = chatTabs.value.find(t => t.id === activeTab.value);
-    return tab?.component ?? ConsolePane;
+const { chat_token } = defineProps<{ chat_token: string }>();
+
+const activeTab = ref('console');
+
+const tabComponentMap = reactive<Record<string, any>>({
+    console: ConsolePane,
 });
 
+// Breadcrumbs
+const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Chat', href: '/chat' },
+];
+
+// Tab management
+const { chatTabs, tabTargets, addChannelTab, addPrivmsgTab } = useChatTabs();
+
+const currentTab = computed(() => chatTabs.value.find(t => t.id === activeTab.value));
+const currentPane = computed(() => tabComponentMap[activeTab.value] ?? ConsolePane);
+
 // IRC message buffer
-const { lines, addLinesTo } = useIrcLines();
+const { lines, addLinesTo, getLinesFor } = useIrcLines();
 
 const ircClient = new IrcClient(
     (msg) => console.log(`[IRC] ${msg}`),
@@ -58,10 +65,14 @@ const ircClient = new IrcClient(
     },
     {
         onJoinChannel: (channel) => {
+            const id = `channel-${channel}`;
             addChannelTab(channel);
+            registerComponentForTab(id, ChannelPane);
         },
         onPrivmsg: (nick) => {
+            const id = `pm-${nick}`;
             addPrivmsgTab(nick);
+            registerComponentForTab(id, PrivmsgPane);
         },
     }
 );
@@ -98,7 +109,7 @@ onBeforeUnmount(disconnect);
 
             <!-- Main Chat Pane -->
             <div class="flex-1 flex flex-col h-full min-h-0 overflow-hidden">
-                <component :is="currentPane" :lines="lines" />
+                <component :is="currentPane" :lines="lines" :tab-id="activeTab" />
             </div>
         </div>
     </AppLayout>

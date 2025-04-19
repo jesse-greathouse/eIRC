@@ -1,6 +1,5 @@
 import { IrcLine } from '@/types/IrcLine';
 import type { IrcEventHandler, IrcClientOptions } from './types';
-import { IRC_EVENT_KEYS } from './constants';
 
 export class IrcClient {
     private eventHandlers = new Map<string, IrcEventHandler[]>();
