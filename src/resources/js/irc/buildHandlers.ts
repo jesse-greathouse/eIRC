@@ -5,6 +5,7 @@ import { pingHandler } from './handlers/pingHandler';
 import { joinHandler } from './handlers/joinHandler';
 import { privmsgHandler } from './handlers/privmsgHandler';
 import { welcomeHandler } from './handlers/welcomeHandler';
+import { modeHandler } from './handlers/modeHandler';
 
 export function buildHandlers(): Record<string, IrcEventHandler[]> {
     return {
@@ -12,5 +13,6 @@ export function buildHandlers(): Record<string, IrcEventHandler[]> {
         [IRC_EVENT_KEYS.JOIN]: [joinHandler],
         [IRC_EVENT_KEYS.PRIVMSG]: [privmsgHandler],
         [IRC_EVENT_KEYS.WELCOME]: [welcomeHandler],
+        [IRC_EVENT_KEYS.MODE]: [modeHandler],
     };
 }

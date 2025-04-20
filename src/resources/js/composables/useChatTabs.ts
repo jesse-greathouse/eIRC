@@ -13,20 +13,21 @@ export function useChatTabs() {
     const tabTargets = new Map<string, Ref<HTMLElement | null>>();
 
     function trackRef(id: string) {
-        const key = id.replace(/^channel-/, '').replace(/^pm-/, '');
-        if (!tabTargets.has(key)) {
-            tabTargets.set(key, ref<HTMLElement | null>(null));
+        if (!tabTargets.has(id)) {
+            tabTargets.set(id, ref<HTMLElement | null>(null));
         }
     }
 
     function addChannelTab(name: string) {
-        trackRef(`channel-${name}`);
-        rawAddChannel(name); // renamed to avoid shadowing
+        const id = `channel-${name}`;
+        trackRef(id);
+        rawAddChannel(name);
     }
 
     function addPrivmsgTab(nick: string) {
-        trackRef(`pm-${nick}`);
-        rawAddPrivmsgUser(nick); // renamed to avoid shadowing
+        const id = `pm-${nick}`;
+        trackRef(id);
+        rawAddPrivmsgUser(nick);
     }
 
     const consoleTab: ChatTab = {

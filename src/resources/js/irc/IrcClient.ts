@@ -8,7 +8,7 @@ export class IrcClient {
     public nick: string = '';
 
     constructor(
-        private readonly log: (msg: string) => void,
+        public readonly log: (msg: string) => void, // Changed from private to public
         private readonly draw: (line: IrcLine) => void,
         public readonly opts: IrcClientOptions = {}
     ) {}

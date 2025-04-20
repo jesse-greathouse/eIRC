@@ -1,12 +1,12 @@
 <template>
-    <div class="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white">
-        <!-- Top Global Navigation -->
-        <header class="shadow z-20">
+    <div class="h-screen flex flex-col overflow-hidden bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white">
+        <!-- Fixed height header -->
+        <header class="h-14 shrink-0 shadow z-20">
             <MainNav />
         </header>
 
-        <!-- Main Content Area -->
-        <main class="flex flex-1 min-h-0 p-4 overflow-hidden">
+        <!-- Fill remaining height -->
+        <main class="flex-1 flex flex-col min-h-0 p-4 overflow-hidden">
             <slot />
         </main>
     </div>

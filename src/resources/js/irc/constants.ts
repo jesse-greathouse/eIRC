@@ -6,4 +6,5 @@ export const IRC_EVENT_KEYS = {
     WHOIS: 'WHOIS',
     JOIN: 'JOIN',
     WELCOME: '001',
+    MODE: 'MODE,'
 };

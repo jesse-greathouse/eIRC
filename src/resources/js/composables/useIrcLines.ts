@@ -1,15 +1,15 @@
-import { ref, type Ref } from 'vue';
+import { reactive } from 'vue';
 import { IrcLine } from '@/types/IrcLine';
 import { useChatTabs } from '@/composables/useChatTabs';
 
 export function useIrcLines() {
   const { addChannelTab, addPrivmsgTab } = useChatTabs();
-  const _lines = ref(new Map<string, IrcLine[]>());
+  const _lines = reactive(new Map<string, IrcLine[]>());
 
-  _lines.value.set('console', []);
+  _lines.set('console', []);
 
-  function addLinesTo(target: string, newLines: IrcLine[]) {
-    if (!_lines.value.has(target)) {
+  function ensureTabExists(target: string) {
+    if (!_lines.has(target)) {
       if (target.startsWith('channel-')) {
         addChannelTab(target.slice(8));
       } else if (target.startsWith('pm-')) {
@@ -18,22 +18,31 @@ export function useIrcLines() {
         console.warn(`[addLinesTo] Unknown tab type: "${target}"`);
       }
 
-      _lines.value.set(target, []);
+      _lines.set(target, []);
     }
+  }
 
-    // Replace the array with a new one to trigger reactivity
-    const existing = _lines.value.get(target) ?? [];
-    _lines.value.set(target, [...existing, ...newLines]);
+  function addLinesTo(target: string, newLines: IrcLine[]) {
+    ensureTabExists(target);
+    const existing = _lines.get(target) ?? [];
+    _lines.set(target, [...existing, ...newLines]);
+  }
+
+  function addUserLineTo(tabId: string, line: IrcLine) {
+    ensureTabExists(tabId);
+    const existing = _lines.get(tabId) ?? [];
+    _lines.set(tabId, [...existing, line]);
   }
 
   function getLinesFor(target: string) {
-    return _lines.value.get(target) ?? [];
+    return _lines.get(target) ?? [];
   }
 
- return {
+  return {
     lines: _lines,
     addLinesTo,
-    getLines: () => _lines.value,
+    addUserLineTo,
+    getLines: () => _lines, // if you want a snapshot use new Map(_lines)
     getLinesFor,
- };
+  };
 }
