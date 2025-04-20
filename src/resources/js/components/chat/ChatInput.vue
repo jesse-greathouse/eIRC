@@ -1,16 +1,19 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
+const send = (target: string, message: string) => {
+    console.log(`message to: ${target}: ${message}`);
+}
+
 const props = defineProps<{
     target: string;
-    onSend: (message: string) => void;
 }>();
 
 const message = ref('');
 
 function handleSubmit() {
     if (message.value.trim()) {
-        props.onSend(message.value.trim());
+        send(props.target, message.value.trim());
         message.value = '';
     }
 }

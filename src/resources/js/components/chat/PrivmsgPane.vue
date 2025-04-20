@@ -8,6 +8,7 @@ const props = defineProps<{
     lines: Map<string, IrcLine[]>;
     tabId: string;
 }>();
+
 </script>
 
 <template>
