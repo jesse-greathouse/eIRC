@@ -30,6 +30,10 @@ export function useChatTabs() {
         rawAddPrivmsgUser(nick);
     }
 
+    function getNameByTabId(tabId: string): string {
+        return tabId.replace(/^channel-/, '').replace(/^pm-/, '');
+    }
+
     const consoleTab: ChatTab = {
         id: 'console',
         label: 'Console',
@@ -55,5 +59,6 @@ export function useChatTabs() {
         tabTargets,
         addChannelTab,
         addPrivmsgTab,
+        getNameByTabId,
     };
 }

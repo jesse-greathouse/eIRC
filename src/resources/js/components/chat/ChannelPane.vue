@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import BaseChatPane from './BaseChatPane.vue';
-import ChatInput from './ChatInput.vue';
 import { classifyLine, getUser, renderEventText } from './helpers';
+import ChatInput from './ChatInput.vue';
 import type { IrcLine } from '@/types/IrcLine';
+import { IrcClient } from '@/irc/IrcClient';
 
 const props = defineProps<{
     lines: Map<string, IrcLine[]>;
     tabId: string;
+    client: IrcClient;
 }>();
 </script>
 
@@ -30,7 +32,7 @@ const props = defineProps<{
         </template>
 
         <template #input>
-            <ChatInput :target="props.tabId" />
+            <ChatInput :tabId="props.tabId" :client="props.client" />
         </template>
     </BaseChatPane>
 </template>

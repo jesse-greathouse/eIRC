@@ -3,19 +3,17 @@ import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { Head } from '@inertiajs/vue3';
 
 import { type BreadcrumbItem } from '@/types';
-import { parseIrcLine } from '@/lib/parseIrcLine';
 import { getTabKey } from '@/lib/getTabKey';
+import { buildHandlers } from '@/irc/buildHandlers';
 
 import AppLayout from '@/layouts/AppLayout.vue';
 import ContextMenu from '@/components/nav/ChatContextMenu.vue';
 import ConsolePane from '@/components/chat/ConsolePane.vue';
 
 import { useChatTabs } from '@/composables/useChatTabs';
-import { useWebSocket } from '@/composables/useWebSocket';
 import { useIrcLines } from '@/composables/useIrcLines';
 
 import { IrcClient } from '@/irc/IrcClient';
-import { buildHandlers } from '@/irc/buildHandlers';
 
 const { chat_token } = defineProps<{ chat_token: string }>();
 
@@ -42,9 +40,12 @@ function switchTab(tabId: string) {
 }
 
 // IRC Client and Message buffer dispatch
-const { lines, addLinesTo, getLinesFor, addUserLineTo } = useIrcLines();
+const { lines, addLinesTo, addUserLineTo } = useIrcLines();
 
 const ircClient = new IrcClient(
+    chat_token,
+    location.hostname,
+    9667,
     (msg) => console.log(`[IRC] ${msg}`),
     (line) => {
         const target = getTabKey(line);
@@ -57,7 +58,7 @@ const ircClient = new IrcClient(
         onPrivmsg: (nick) => {
             addPrivmsgTab(nick);
         },
-        addUserLineTo, // 💡 hook passed here
+        addUserLineTo,
     }
 );
 
@@ -66,32 +67,14 @@ Object.entries(buildHandlers()).forEach(([event, handlers]) => {
     handlers.forEach(h => ircClient.addEventHandler(event, h));
 });
 
-// WebSocket connection
-const { connect, send, disconnect } = useWebSocket(
-    `ws://${location.hostname}:9667/?chat_token=${chat_token}`,
-    (rawLine) => {
-        const parsed = parseIrcLine(rawLine);
-        ircClient.handleLine(parsed);
-    }
-);
-
-function sendIrcCommand(rawCommand: string) {
-    const message = `/input ${rawCommand}`;
-    send(message);
-}
-
-
 onMounted(() => {
-    // Overflow-hidden on the body so the chat pane can grow with the view pane
     document.body.classList.add('overflow-hidden');
-
-    // connecting to the websocket initiates the connection to the IRC Server.
-    connect();
+    ircClient.connect();
 });
 
 onBeforeUnmount(() => {
     document.body.classList.remove('overflow-hidden');
-    disconnect();
+    ircClient.disconnect();
 });
 </script>
 
@@ -110,7 +93,7 @@ onBeforeUnmount(() => {
             <!-- Chat Pane -->
             <div
                 class="flex-1 flex flex-col min-h-0 overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border bg-gray-100 dark:bg-gray-900">
-                <component :is="currentPane" :lines="lines" :tab-id="activeTab" :send-irc-command="sendIrcCommand" />
+                <component :is="currentPane" :lines="lines" :tab-id="activeTab" :client="ircClient" />
             </div>
         </div>
     </AppLayout>

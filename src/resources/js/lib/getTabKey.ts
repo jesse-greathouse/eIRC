@@ -1,12 +1,21 @@
 import type { IrcLine } from '@/types/IrcLine';
 
 export function getTabKey(line: IrcLine): string {
-    if (line.command === 'PRIVMSG' && line.params[0]?.startsWith('#')) {
-        return `channel-${line.params[0]}`;
-    } else if (line.command === 'PRIVMSG') {
-        return `pm-${line.prefix?.split('!')[0] || 'unknown'}`;
-    } else if (line.command === 'MODE' && line.params[0]?.startsWith('#')) {
-        return `channel-${line.params[0]}`;
+    const target = line.params[0];
+
+    if (line.command === 'PRIVMSG') {
+        if (target?.startsWith('#')) {
+            return `channel-${target}`;
+        } else {
+            // If prefix exists, it's incoming; otherwise it's outgoing, use param[0]
+            const user = line.prefix?.split('!')[0] ?? target ?? 'unknown';
+            return `pm-${user}`;
+        }
     }
+
+    if (line.command === 'MODE' && target?.startsWith('#')) {
+        return `channel-${target}`;
+    }
+
     return 'console';
 }
