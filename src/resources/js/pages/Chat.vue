@@ -3,19 +3,17 @@ import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { Head } from '@inertiajs/vue3';
 
 import { type BreadcrumbItem } from '@/types';
-import { getTabKey } from '@/lib/getTabKey';
-import { buildHandlers } from '@/irc/buildHandlers';
+import emitter from '@/lib/emitter';
 
 import AppLayout from '@/layouts/AppLayout.vue';
 import ContextMenu from '@/components/nav/ChatContextMenu.vue';
 import ConsolePane from '@/components/chat/ConsolePane.vue';
 
 import { useChatTabs } from '@/composables/useChatTabs';
+import { getIrcClient } from '@/composables/useIrcClient';
 import { useIrcLines } from '@/composables/useIrcLines';
 
-import { IrcClient } from '@/irc/IrcClient';
-
-const { chat_token } = defineProps<{ chat_token: string }>();
+const { } = defineProps<{}>();
 
 // Breadcrumbs
 const breadcrumbs: BreadcrumbItem[] = [
@@ -40,48 +38,27 @@ function switchTab(tabId: string) {
 }
 
 // IRC Client and Message buffer dispatch
-const { lines, addLinesTo, addUserLineTo } = useIrcLines();
-
-// Flag if the client has not joined a channel yet.
-let hasSwitchedInitialJoin = false;
-const ircClient = new IrcClient(
-    chat_token,
-    location.hostname,
-    9667,
-    (msg) => console.log(`[IRC] ${msg}`),
-    (line) => {
-        const target = getTabKey(line);
-        addLinesTo(target, [line]);
-    },
-    {
-        onJoinChannel: (channel) => {
-            const tabId = `channel-${channel}`;
-            addChannelTab(channel);
-            if (!hasSwitchedInitialJoin) {
-                hasSwitchedInitialJoin = true;
-                switchTab(tabId);
-            }
-        },
-        onPrivmsg: (nick) => {
-            addPrivmsgTab(nick);
-        },
-        addUserLineTo,
-    }
-);
-
-// Register handlers
-Object.entries(buildHandlers()).forEach(([event, handlers]) => {
-    handlers.forEach(h => ircClient.addEventHandler(event, h));
-});
+const { lines } = useIrcLines();
+const ircClient = getIrcClient();
 
 onMounted(() => {
+    emitter.on('joined-channel', addChannelTab);
+    emitter.on('new-privmsg', addPrivmsgTab);
+    emitter.on('switch-tab', switchTab);
     document.body.classList.add('overflow-hidden');
-    ircClient.connect();
+
+    if (ircClient) {
+        ircClient.channels(); // Ask the client for channel membership info
+    } else {
+        console.warn('[Chat.vue] IRC client not initialized');
+    }
 });
 
 onBeforeUnmount(() => {
+    emitter.off('joined-channel', addChannelTab);
+    emitter.off('new-privmsg', addPrivmsgTab);
+    emitter.off('switch-tab', switchTab);
     document.body.classList.remove('overflow-hidden');
-    ircClient.disconnect();
 });
 </script>
 
@@ -100,8 +77,7 @@ onBeforeUnmount(() => {
             <!-- Chat Pane -->
             <div
                 class="flex-1 flex flex-col min-h-0 overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border bg-gray-100 dark:bg-gray-900">
-                <component :is="currentPane" :lines="lines" :tab-id="activeTab" :client="ircClient"
-                    @switch-tab="switchTab" />
+                <component :is="currentPane" :lines="lines" :tab-id="activeTab" @switch-tab="switchTab" />
             </div>
         </div>
     </AppLayout>

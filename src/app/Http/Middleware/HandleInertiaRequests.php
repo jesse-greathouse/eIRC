@@ -46,6 +46,7 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            'chat_token' => $request->user()?->createToken('chat')->token->id,
             'ziggy' => [
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),

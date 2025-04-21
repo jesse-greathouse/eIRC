@@ -2,9 +2,9 @@
 import { ref, computed } from 'vue';
 import { parseIrcLine } from '@/lib/parseIrcLine';
 import { useChatTabs } from '@/composables/useChatTabs';
+import { getIrcClient } from '@/composables/useIrcClient';
 import { commandMap } from '@/chat-commands/commandMap';
 import { nanoid } from 'nanoid';
-import type { IrcClient } from '@/irc/IrcClient';
 import { IrcLine } from '@/types/IrcLine';
 
 const emit = defineEmits<{
@@ -13,19 +13,17 @@ const emit = defineEmits<{
 
 const props = defineProps<{
     tabId: string;
-    client: IrcClient;
 }>();
 
 const input = ref('');
 const { getNameByTabId } = useChatTabs();
-
+const client = getIrcClient();
 const target = computed(() => getNameByTabId(props.tabId));
+const nick = computed(() => client?.nick || '...');
 
 async function handleSubmit() {
     const rawInput = input.value.trim();
-    if (!rawInput) return;
-
-    const nick = props.client.nick || '...';
+    if (!rawInput || !client) return;
 
     try {
         if (rawInput.startsWith('/')) {
@@ -45,46 +43,38 @@ async function handleSubmit() {
                     args,
                     rawInput,
                     tabId: props.tabId,
-                    nick,
+                    nick: nick.value,
                     target: target.value,
-                    client: props.client,
+                    client,
                     inject: (tabId, line) => {
-                        props.client.opts.addUserLineTo?.(tabId, line);
+                        client.opts.addUserLineTo?.(tabId, line);
                     },
                     switchTab: (tabId) => emit('switch-tab', tabId),
                 });
             } else {
-                // Fallback: treat it as a raw /input
-                await props.client.input(commandText);
-
-                props.client.opts.addUserLineTo?.('console', new IrcLine({
+                await client.input(commandText);
+                client.opts.addUserLineTo?.('console', new IrcLine({
                     id: nanoid(),
                     timestamp: Date.now(),
                     raw: `→ ${commandText}`,
                     command,
                     params: args,
-                    prefix: `${nick}!local@client`,
+                    prefix: `${nick.value}!local@client`,
                 }));
             }
         } else {
-            // Normal chat message
-            await props.client.msg(target.value, rawInput);
-
-            props.client.opts.addUserLineTo?.(props.tabId, new IrcLine({
+            await client.msg(target.value, rawInput);
+            client.opts.addUserLineTo?.(props.tabId, new IrcLine({
                 id: nanoid(),
                 timestamp: Date.now(),
-                raw: `<${nick}> ${rawInput}`,
+                raw: `<${nick.value}> ${rawInput}`,
                 command: 'PRIVMSG',
                 params: [target.value, rawInput],
-                prefix: `${nick}!local@client`,
+                prefix: `${nick.value}!local@client`,
             }));
         }
     } catch (err: unknown) {
-        if (err instanceof Error) {
-            console.warn('Send failed:', err.message);
-        } else {
-            console.warn('Send failed:', err);
-        }
+        console.warn('Send failed:', err instanceof Error ? err.message : err);
     }
 
     input.value = '';

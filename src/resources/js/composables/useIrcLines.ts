@@ -2,11 +2,16 @@ import { reactive } from 'vue';
 import { IrcLine } from '@/types/IrcLine';
 import { useChatTabs } from '@/composables/useChatTabs';
 
+const _lines = reactive(new Map<string, IrcLine[]>());
+const initialized = { value: false };
+
 export function useIrcLines() {
   const { addChannelTab, addPrivmsgTab } = useChatTabs();
-  const _lines = reactive(new Map<string, IrcLine[]>());
 
-  _lines.set('console', []);
+  if (!initialized.value) {
+    _lines.set('console', []);
+    initialized.value = true;
+  }
 
   function ensureTabExists(target: string) {
     if (!_lines.has(target)) {
@@ -42,7 +47,7 @@ export function useIrcLines() {
     lines: _lines,
     addLinesTo,
     addUserLineTo,
-    getLines: () => _lines, // if you want a snapshot use new Map(_lines)
+    getLines: () => _lines,
     getLinesFor,
   };
 }

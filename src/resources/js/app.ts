@@ -9,6 +9,9 @@ import { ZiggyVue } from 'ziggy-js';
 import { initFlowbite } from 'flowbite';
 import { initializeTheme } from './composables/useAppearance';
 
+import { useIrcClient } from './composables/useIrcClient';
+import { usePage } from '@inertiajs/vue3';
+
 // Extend ImportMeta interface for Vite...
 declare module 'vite/client' {
     interface ImportMetaEnv {
@@ -32,13 +35,24 @@ createInertiaApp({
             .use(plugin)
             .use(ZiggyVue)
             .mount(el);
+
+        // 🌐 Initialize global IRC client if token is available
+        const rawToken = props.initialPage.props.chat_token;
+        const chatToken = typeof rawToken === 'string' ? rawToken : null;
+
+        if (chatToken) {
+            try {
+                useIrcClient(chatToken);
+            } catch (error) {
+                console.warn('[IRC] Failed to initialize client:', error);
+            }
+        }
+
+        // 🎨 Theme and Flowbite setup
+        initFlowbite();
+        initializeTheme();
     },
     progress: {
         color: '#4B5563',
     },
-}).then(() => {
-    initFlowbite()
 });
-
-// This will set light / dark mode on page load...
-initializeTheme();

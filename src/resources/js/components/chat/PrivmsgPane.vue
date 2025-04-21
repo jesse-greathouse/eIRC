@@ -3,7 +3,6 @@ import BaseChatPane from './BaseChatPane.vue';
 import ChatInput from './ChatInput.vue';
 import { classifyLine, getUser } from './helpers';
 import type { IrcLine } from '@/types/IrcLine';
-import { IrcClient } from '@/irc/IrcClient';
 
 const emit = defineEmits<{
     (e: 'switch-tab', tabId: string): void;
@@ -12,7 +11,6 @@ const emit = defineEmits<{
 const props = defineProps<{
     lines: Map<string, IrcLine[]>;
     tabId: string;
-    client: IrcClient;
 }>();
 
 </script>
@@ -37,7 +35,7 @@ const props = defineProps<{
         </template>
 
         <template #input>
-            <ChatInput :tabId="props.tabId" :client="props.client" @switch-tab="emit('switch-tab', $event)" />
+            <ChatInput :tabId="props.tabId" @switch-tab="emit('switch-tab', $event)" />
         </template>
     </BaseChatPane>
 </template>
