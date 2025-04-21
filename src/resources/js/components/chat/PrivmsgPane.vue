@@ -5,6 +5,10 @@ import { classifyLine, getUser } from './helpers';
 import type { IrcLine } from '@/types/IrcLine';
 import { IrcClient } from '@/irc/IrcClient';
 
+const emit = defineEmits<{
+    (e: 'switch-tab', tabId: string): void;
+}>();
+
 const props = defineProps<{
     lines: Map<string, IrcLine[]>;
     tabId: string;
@@ -33,7 +37,7 @@ const props = defineProps<{
         </template>
 
         <template #input>
-            <ChatInput :tabId="props.tabId" :client="props.client" />
+            <ChatInput :tabId="props.tabId" :client="props.client" @switch-tab="emit('switch-tab', $event)" />
         </template>
     </BaseChatPane>
 </template>

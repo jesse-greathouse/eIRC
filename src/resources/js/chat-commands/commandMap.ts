@@ -1,10 +1,13 @@
 import { meCommand } from './me';
-// import { privmsgCommand } from './privmsg';
-// import { noticeCommand } from './notice';
+import { privmsgCommand } from './privmsg';
+import { noticeCommand } from './notice';
+import { joinCommand } from './join';
 import type { ChatCommandHandler } from './types';
 
 export const commandMap: Record<string, ChatCommandHandler> = {
     ME: meCommand,
-    // PRIVMSG: privmsgCommand,
-    // NOTICE: noticeCommand,
+    PRIVMSG: privmsgCommand,
+    MSG: privmsgCommand,       // alias for PRIVMSG
+    NOTICE: noticeCommand,
+    JOIN: joinCommand,
 };

@@ -1,4 +1,5 @@
 import type { IrcClient } from '@/irc/IrcClient';
+import { IrcLine } from '@/types/IrcLine';
 
 export interface CommandContext {
     commandText: string;
@@ -8,7 +9,8 @@ export interface CommandContext {
     nick: string;
     target: string;
     client: IrcClient;
-    inject: (tabId: string, line: any) => void;
+    inject: (tabId: string, line: IrcLine) => void;
+    switchTab?: (tabId: string) => void;
 }
 
 export type ChatCommandHandler = (ctx: CommandContext) => Promise<void>;

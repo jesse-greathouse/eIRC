@@ -42,6 +42,8 @@ function switchTab(tabId: string) {
 // IRC Client and Message buffer dispatch
 const { lines, addLinesTo, addUserLineTo } = useIrcLines();
 
+// Flag if the client has not joined a channel yet.
+let hasSwitchedInitialJoin = false;
 const ircClient = new IrcClient(
     chat_token,
     location.hostname,
@@ -53,7 +55,12 @@ const ircClient = new IrcClient(
     },
     {
         onJoinChannel: (channel) => {
+            const tabId = `channel-${channel}`;
             addChannelTab(channel);
+            if (!hasSwitchedInitialJoin) {
+                hasSwitchedInitialJoin = true;
+                switchTab(tabId);
+            }
         },
         onPrivmsg: (nick) => {
             addPrivmsgTab(nick);
@@ -93,7 +100,8 @@ onBeforeUnmount(() => {
             <!-- Chat Pane -->
             <div
                 class="flex-1 flex flex-col min-h-0 overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border bg-gray-100 dark:bg-gray-900">
-                <component :is="currentPane" :lines="lines" :tab-id="activeTab" :client="ircClient" />
+                <component :is="currentPane" :lines="lines" :tab-id="activeTab" :client="ircClient"
+                    @switch-tab="switchTab" />
             </div>
         </div>
     </AppLayout>

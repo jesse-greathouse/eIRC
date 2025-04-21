@@ -3,21 +3,23 @@ import type { IrcLine } from '@/types/IrcLine';
 export type LineType = 'message' | 'notice' | 'event';
 
 export function classifyLine(line: IrcLine, context: 'console' | 'channel' | 'privmsg'): LineType {
-    const isNotice = line.command === 'NOTICE';
-    const isPrivmsg = line.command === 'PRIVMSG';
-    const isEvent = ['JOIN', 'PART', 'QUIT', 'MODE'].includes(line.command);
+    const { command } = line;
+    const isEvent = ['JOIN', 'PART', 'QUIT', 'MODE'].includes(command);
+    const isNotice = command === 'NOTICE';
+    const isPrivmsg = command === 'PRIVMSG';
 
-    if (context === 'console') {
-        return isNotice ? 'notice' : 'message';
+    switch (context) {
+        case 'console':
+            return isNotice ? 'notice' : 'message';
+
+        case 'channel':
+            if (isEvent) return 'event';
+            if (isNotice) return 'notice';
+            return 'message';
+
+        case 'privmsg':
+            return isPrivmsg ? 'message' : 'notice';
     }
-
-    if (context === 'channel') {
-        if (isEvent) return 'event';
-        if (isNotice) return 'notice';
-        return 'message';
-    }
-
-    return isPrivmsg ? 'message' : 'notice';
 }
 
 export function getUser(line: IrcLine): string {

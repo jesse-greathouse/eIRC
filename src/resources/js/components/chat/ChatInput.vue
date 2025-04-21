@@ -7,6 +7,10 @@ import { nanoid } from 'nanoid';
 import type { IrcClient } from '@/irc/IrcClient';
 import { IrcLine } from '@/types/IrcLine';
 
+const emit = defineEmits<{
+    (e: 'switch-tab', tabId: string): void;
+}>();
+
 const props = defineProps<{
     tabId: string;
     client: IrcClient;
@@ -47,6 +51,7 @@ async function handleSubmit() {
                     inject: (tabId, line) => {
                         props.client.opts.addUserLineTo?.(tabId, line);
                     },
+                    switchTab: (tabId) => emit('switch-tab', tabId),
                 });
             } else {
                 // Fallback: treat it as a raw /input

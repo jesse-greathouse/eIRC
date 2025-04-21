@@ -51,7 +51,7 @@ export class IrcClient {
             throw err;
         }
 
-        this.log(`sending: ${raw}`);
+        this.log(`→ ${commandText}`);
         this.socket.send(raw);
     }
 
