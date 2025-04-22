@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import BaseChatPane from './BaseChatPane.vue';
+import PrivmsgPaneHeader from './PrivmsgPaneHeader.vue'
 import ChatInput from './ChatInput.vue';
 import { classifyLine, getUser } from './helpers';
 import type { IrcLine } from '@/types/IrcLine';
@@ -17,6 +18,11 @@ const props = defineProps<{
 
 <template>
     <BaseChatPane v-bind="props">
+        <!-- Header for Privmsg -->
+        <template #header>
+            <PrivmsgPaneHeader :nick="props.tabId.replace(/^pm-/, '')" status="Online" />
+        </template>
+
         <template #default="{ tabLines }">
             <ul class="text-sm text-gray-700 dark:text-gray-300 space-y-1">
                 <li v-for="(line, index) in tabLines" :key="line.id ?? index">

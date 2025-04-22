@@ -1,13 +1,16 @@
 import { IrcLine } from '@/types/IrcLine';
+import { User } from './models/User';
+import { Channel } from './models/Channel';
 import type { IrcEventHandler, IrcClientOptions } from './types';
 import { parseIrcLine } from '@/lib/parseIrcLine';
 
 export class IrcClient {
     private eventHandlers = new Map<string, IrcEventHandler[]>();
-    private joinedChannels = new Set<string>();
     private socket: WebSocket | null = null;
 
     public nick: string = '';
+    public users: Map<string, User> = new Map();
+    public channels: Map<string, Channel> = new Map();
 
     constructor(
         private readonly token: string,
@@ -29,7 +32,7 @@ export class IrcClient {
 
         this.socket.onmessage = (event) => {
             const raw = event.data;
-            const parsed = parseIrcLine(raw); // import this at the top
+            const parsed = parseIrcLine(raw);
             this.handleLine(parsed);
         };
 
@@ -55,7 +58,7 @@ export class IrcClient {
         this.socket.send(raw);
     }
 
-    async channels(): Promise<void> {
+    async fetchChannelList(): Promise<void> {
         const raw = `/channels`;
 
         if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
@@ -68,8 +71,8 @@ export class IrcClient {
         this.socket.send(raw);
     }
 
-    async users(channel: string): Promise<void> {
-        const raw = `/users ${channel}`;
+    async fetchUserList(channel: Channel): Promise<void> {
+        const raw = `/users ${channel.name}`;
 
         if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
             const err = new Error('Cannot send: WebSocket is not open');
@@ -116,6 +119,10 @@ export class IrcClient {
         return this.input(`NOTICE ${target} :${message}`);
     }
 
+    async whois(target: string): Promise<void> {
+        return this.input(`WHOIS ${target}`);
+    }
+
     disconnect() {
         if (this.socket) {
             this.socket.close();
@@ -142,10 +149,63 @@ export class IrcClient {
     }
 
     joinChannel(name: string) {
-        this.joinedChannels.add(name);
+        if (!this.channels.has(name)) {
+            this.channels.set(name, new Channel(name));
+        }
     }
 
-    getChannels() {
-        return Array.from(this.joinedChannels);
+    getChannelNames(): string[] {
+        return Array.from(this.channels.keys());
+    }
+
+    getOrCreateUser(nick: string): User {
+        let user = this.users.get(nick);
+        if (!user) {
+            user = new User(nick);
+            this.users.set(nick, user);
+        }
+        return user;
+    }
+
+    getOrCreateChannel(name: string): Channel {
+        let channel = this.channels.get(name);
+        if (!channel) {
+            channel = new Channel(name);
+            this.channels.set(name, channel);
+        }
+        return channel;
+    }
+
+    addUserToChannel(userNick: string, channelName: string): { user: User, channel: Channel } {
+        const user = this.getOrCreateUser(userNick);
+        const channel = this.getOrCreateChannel(channelName);
+
+        // Link user to channel and vice versa
+        user.addChannel(channel);
+        channel.addUser(user);
+
+        return { user, channel };
+    }
+
+    serialize(): object {
+        const usersSerialized = Array.from(this.users.entries()).reduce((acc, [nick, user]) => {
+            acc[nick] = user.serialize();
+            return acc;
+        }, {} as Record<string, object>);
+
+        const channelsSerialized = Array.from(this.channels.entries()).reduce((acc, [name, channel]) => {
+            acc[name] = channel.serialize();
+            return acc;
+        }, {} as Record<string, object>);
+
+        return {
+            nick: this.nick,
+            users: usersSerialized,
+            channels: channelsSerialized,
+        };
+    }
+
+    toJson(pretty: boolean = false): string {
+        return JSON.stringify(this.serialize(), null, pretty ? 2 : 0);
     }
 }

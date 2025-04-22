@@ -23,9 +23,17 @@ print_help_and_exit() if $help;
 # Convert mask to regex if provided
 my $pattern;
 if (defined $mask) {
-    (my $regex = $mask) =~ s/\./\\./g;
-    $regex =~ s/\*/.*/g;
-    $pattern = qr/^$regex$/;
+    my @masks = split(/\|/, $mask);
+    my @regex_parts;
+
+    foreach my $m (@masks) {
+        $m =~ s/\./\\./g;
+        $m =~ s/\*/.*/g;
+        push @regex_parts, "^$m\$";
+    }
+
+    my $combined_regex = join("|", @regex_parts);
+    $pattern = qr/$combined_regex/;
 }
 
 

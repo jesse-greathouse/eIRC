@@ -27,9 +27,13 @@ defineExpose({ tabLines, scrollContainer });
 
 <template>
     <div class="flex flex-col flex-1 min-h-0 overflow-hidden">
+        <!-- Header slot -->
+        <div class="shrink-0 p-4 border-b border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800">
+            <slot name="header" />
+        </div>
+
         <!-- Scrollable message buffer -->
         <div class="flex-1 min-h-0 overflow-y-auto px-4 pt-4 space-y-1" ref="scrollContainer">
-            <h2 class="text-lg font-semibold mb-2">{{ props.tabId }}</h2>
             <slot :tabLines="tabLines" />
         </div>
 

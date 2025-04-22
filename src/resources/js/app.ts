@@ -22,7 +22,7 @@ createInertiaApp({
             .use(ZiggyVue)
             .mount(el);
 
-        // 🌐 Initialize global IRC client if token is available
+        // Initialize global IRC client if token is available
         const rawToken = props.initialPage.props.chat_token;
         const chatToken = typeof rawToken === 'string' ? rawToken : null;
 
@@ -34,7 +34,6 @@ createInertiaApp({
             }
         }
 
-        // 🎨 Theme and Flowbite setup
         initFlowbite();
         initializeTheme();
     },

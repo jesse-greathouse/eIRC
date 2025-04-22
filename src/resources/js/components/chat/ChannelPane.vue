@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import BaseChatPane from './BaseChatPane.vue';
+import ChannelPaneHeader from './ChannelPaneHeader.vue';
 import { classifyLine, getUser, renderEventText } from './helpers';
 import ChatInput from './ChatInput.vue';
 import type { IrcLine } from '@/types/IrcLine';
@@ -16,6 +17,11 @@ const props = defineProps<{
 
 <template>
     <BaseChatPane v-bind="props">
+        <!-- Header for Channel -->
+        <template #header>
+            <ChannelPaneHeader :channel="props.tabId" topic="Welcome to the channel!" />
+        </template>
+
         <template #default="{ tabLines }">
             <ul class="text-sm text-gray-700 dark:text-gray-300 space-y-1">
                 <li v-for="(line, index) in tabLines" :key="line.id ?? index">

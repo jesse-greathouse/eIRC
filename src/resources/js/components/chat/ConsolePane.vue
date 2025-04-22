@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import BaseChatPane from './BaseChatPane.vue';
+import ConsolePaneHeader from './ConsolePaneHeader.vue';
 import ChatInput from './ChatInput.vue';
 import type { IrcLine } from '@/types/IrcLine';
 
@@ -15,6 +16,11 @@ const props = defineProps<{
 
 <template>
     <BaseChatPane v-bind="props">
+        <!-- Header for Console -->
+        <template #header>
+            <ConsolePaneHeader />
+        </template>
+
         <template #default="{ tabLines }">
             <ul class="text-[14px] font-mono text-gray-600 space-y-1">
                 <li v-for="(line, index) in tabLines" :key="line.id ?? index">

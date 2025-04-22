@@ -3,31 +3,29 @@ import { IrcLine } from '@/types/IrcLine';
 import { nanoid } from 'nanoid';
 
 export const joinHandler: IrcEventHandler = (client, line) => {
-    const user = line.prefix?.split('!')[0];
-    const channel = line.params[0];
-    if (!channel || !user) return;
+    const userNick = line.prefix?.split('!')[0];
+    const channelName = line.params[0];
+    if (!channelName || !userNick) return;
 
-    const isSelf = user === client.nick;
+    client.addUserToChannel(userNick, channelName);
+
+    const isSelf = userNick === client.nick;
 
     if (isSelf) {
-        client.joinChannel(channel);
-        client.opts.onJoinChannel?.(channel);
+        client.opts.onJoinChannel?.(channelName);
     }
 
-    // The original message gets send to the console.
-    // Dupe the IrcLine and send it to the channel tab.
-    const message = `${user} has joined ${channel}`;
-    const timestamp = Date.now();
-    const base = {
+    // Compose a new IrcLine for buffer rendering
+   const message = `${userNick} has joined ${channelName}`;
+    const bufferLine = new IrcLine({
         id: nanoid(),
-        timestamp,
+        timestamp: Date.now(),
         raw: message,
         command: 'JOIN',
-        params: [channel, message],
-        prefix: `${user}!joined@server`,
-    };
+        params: [channelName, message],
+        prefix: `${userNick}!joined@server`,
+    });
 
-    // Also send to the new channel tab
-    const tabId = `channel-${channel}`;
-    client.opts.addUserLineTo?.(tabId, new IrcLine({ ...base }));
+    const tabId = `channel-${channelName}`;
+    client.opts.addUserLineTo?.(tabId, bufferLine);
 };
