@@ -39,19 +39,12 @@ function switchTab(tabId: string) {
 
 // IRC Client and Message buffer dispatch
 const { lines } = useIrcLines();
-const ircClient = getIrcClient();
 
 onMounted(() => {
     emitter.on('joined-channel', addChannelTab);
     emitter.on('new-privmsg', addPrivmsgTab);
     emitter.on('switch-tab', switchTab);
     document.body.classList.add('overflow-hidden');
-
-    if (ircClient) {
-        ircClient.channels(); // Ask the client for channel membership info
-    } else {
-        console.warn('[Chat.vue] IRC client not initialized');
-    }
 });
 
 onBeforeUnmount(() => {

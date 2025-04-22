@@ -1,0 +1,88 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+use Getopt::Long;
+use File::Find;
+use File::Spec;
+
+# Command-line options
+my ($mask, $path, $summary, $include_hidden, $help) = (undef, '.', 0, 0, 0);
+
+# Parse command-line options
+GetOptions(
+    "mask=s"    => \$mask,
+    "path=s"    => \$path,
+    "summary"   => \$summary,
+    "hidden!"   => \$include_hidden,   # --hidden or --no-hidden
+    "help"      => \$help,             # --help
+) or print_help_and_exit();
+
+# Show help if --help was passed
+print_help_and_exit() if $help;
+
+# Convert mask to regex if provided
+my $pattern;
+if (defined $mask) {
+    (my $regex = $mask) =~ s/\./\\./g;
+    $regex =~ s/\*/.*/g;
+    $pattern = qr/^$regex$/;
+}
+
+
+# Find and process matching files
+find(
+    sub {
+        return unless -f $_;
+
+        # Skip hidden files unless --hidden is set
+        return unless $include_hidden || $_ !~ /^\./;
+
+        # Apply mask if provided
+        if (defined $pattern) {
+            return unless $_ =~ $pattern;
+        }
+
+        my $full_path = $File::Find::name;
+
+        if ($summary) {
+            print "$full_path\n";
+            return;
+        }
+
+        # Output file content
+        print "--- START $full_path ---\n";
+        open my $fh, '<', $_ or do {
+            warn "Could not read $full_path: $!";
+            return;
+        };
+        print while <$fh>;
+        close $fh;
+        print "--- END $full_path ---\n\n";
+    },
+    $path
+);
+
+# Help subroutine
+sub print_help_and_exit {
+    print <<'EOF';
+Usage: audit [OPTIONS]
+
+Recursively search and optionally print file contents for auditing or context extraction.
+
+Examples:
+  audit                          # Process all files under current directory
+  audit --mask="*.lua"           # Process only .lua files
+  audit --path="./src"           # Start searching in ./src
+  audit --summary                # Show only file paths, no content
+  audit --hidden                 # Include hidden files (e.g. .env)
+
+Options:
+  --mask=PATTERN        Glob-style pattern to match files (e.g. "*.pl", "*.cpp")
+  --path=DIR            Directory to start searching from (default: current directory)
+  --summary             Only print file paths, not their contents
+  --hidden              Include hidden files (filenames starting with '.')
+  --help                Show this help message
+
+EOF
+    exit;
+}

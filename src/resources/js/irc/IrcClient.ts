@@ -55,17 +55,45 @@ export class IrcClient {
         this.socket.send(raw);
     }
 
-    async quit(): Promise<void> {
-        await this.input(`/quit`);
-        this.disconnect();
-    }
-
     async channels(): Promise<void> {
-        await this.input(`/channels`);
+        const raw = `/channels`;
+
+        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+            const err = new Error('Cannot send: WebSocket is not open');
+            this.log(err.message);
+            throw err;
+        }
+
+        this.log(`→ ${raw}`);
+        this.socket.send(raw);
     }
 
     async users(channel: string): Promise<void> {
-        await this.input(`/users ${channel}`);
+        const raw = `/users ${channel}`;
+
+        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+            const err = new Error('Cannot send: WebSocket is not open');
+            this.log(err.message);
+            throw err;
+        }
+
+        this.log(`→ ${raw}`);
+        this.socket.send(raw);
+    }
+
+    async quit(): Promise<void> {
+        const raw = `/quit`;
+
+        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+            const err = new Error('Cannot send: WebSocket is not open');
+            this.log(err.message);
+            throw err;
+        }
+
+        this.log(`→ ${raw}`);
+        this.socket.send(raw);
+
+        this.disconnect();
     }
 
     async msg(target: string, message: string): Promise<void> {
