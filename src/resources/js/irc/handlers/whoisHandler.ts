@@ -11,14 +11,14 @@ export const whoisHandler: IrcEventHandler = (client, line) => {
     }
 
     switch (code) {
-        case '311': { // WHOIS user
-            const [, nick, , host] = line.params;
-            const userName = `${nick}@${host}`;
+        case '311': { // WHOIS user (strictly per IRC spec)
+            const [, nick, username, host, , realName] = line.params;
 
             Object.assign(user.whois, {
                 nick,
+                user: username,
                 host,
-                user: userName,
+                realName,
             });
             break;
         }
@@ -28,6 +28,10 @@ export const whoisHandler: IrcEventHandler = (client, line) => {
                 server,
                 serverInfo,
             });
+            break;
+        }
+        case '313': { // WHOIS operator status
+            user.whois.isOperator = true;
             break;
         }
         case '317': { // WHOIS idle
@@ -64,8 +68,14 @@ export const whoisHandler: IrcEventHandler = (client, line) => {
             }
             break;
         }
+        case '301': { // WHOIS away
+            const [, , awayMessage] = line.params;
+            user.whois.away = awayMessage ?? null;
+            break;
+        }
         case '318': { // WHOIS end
-            client.log(`[318] WHOIS completed for ${nick}: ${user.whois?.serialize()}`);
+            // Nothing to do here, but keeping it just in case we have a future use.
+            // if (user.whois) console.log(user.whois.serialize());
             break;
         }
         default:

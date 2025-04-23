@@ -15,4 +15,8 @@ struct WhoisState
 	std::string channels;
 	std::string idleSeconds;
 	std::string signonTime;
+	std::string username;
+	std::string host;
+	std::string awayMessage;
+	bool isOperator;
 };

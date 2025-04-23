@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import BaseChatPane from './BaseChatPane.vue';
-import ChannelPaneHeader from './ChannelPaneHeader.vue';
-import { classifyLine, getUser, renderEventText } from './helpers';
-import ChatInput from './ChatInput.vue';
+import { computed } from 'vue';
 import type { IrcLine } from '@/types/IrcLine';
+import { classifyLine, getUser, renderEventText } from './helpers';
+import { getIrcClient } from '@/composables/useIrcClient';
+import ChannelPaneHeader from './ChannelPaneHeader.vue';
+import BaseChatPane from './BaseChatPane.vue';
+import ChatInput from './ChatInput.vue';
 
 const emit = defineEmits<{
     (e: 'switch-tab', tabId: string): void;
@@ -13,13 +15,20 @@ const props = defineProps<{
     lines: Map<string, IrcLine[]>;
     tabId: string;
 }>();
+
+const client = getIrcClient();
+
+const channel = computed(() => {
+    const channelName = props.tabId.replace(/^channel-/, '');
+    return client?.channels.get(channelName);
+});
 </script>
 
 <template>
     <BaseChatPane v-bind="props">
         <!-- Header for Channel -->
         <template #header>
-            <ChannelPaneHeader :channel="props.tabId" topic="Welcome to the channel!" />
+            <ChannelPaneHeader :channel="channel?.name" :topic="channel?.topic" />
         </template>
 
         <template #default="{ tabLines }">

@@ -1,4 +1,4 @@
-import { shallowRef } from 'vue';
+import { ref } from 'vue';
 import { IrcClient } from '@/irc/IrcClient';
 import { buildHandlers } from '@/irc/buildHandlers';
 import emitter from '@/lib/emitter';
@@ -8,11 +8,8 @@ import { useIrcLines } from '@/composables/useIrcLines';
 /**
  * IrcClient is being instantiated as a singleton.
  * There can only be one instance of IrcClient per user.
- * A class instance with methods, mutable state, and non-reactive internal logic.
- * Not meant to be "watched" or have its internal state automatically trigger Vue updates.
- * Meant to behave like a service (connects to a socket, manages IO), not a reactive store.
  */
-const ircClientRef = shallowRef<IrcClient | null>(null);
+const ircClientRef = ref<IrcClient | null>(null);
 
 export function useIrcClient(chat_token: string) {
     if (ircClientRef.value) return ircClientRef.value;
@@ -53,7 +50,7 @@ export function useIrcClient(chat_token: string) {
 
     ircClientRef.value = client;
 
-    // 🔒 Clean up when user leaves the site
+    // Clean up when user leaves the site
     if (typeof window !== 'undefined') {
         window.addEventListener('beforeunload', () => {
         ircClientRef.value?.disconnect();
@@ -65,5 +62,5 @@ export function useIrcClient(chat_token: string) {
 }
 
 export function getIrcClient(): IrcClient | null {
-  return ircClientRef.value;
+  return ircClientRef.value as IrcClient | null;
 }

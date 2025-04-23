@@ -2,7 +2,7 @@
 import BasePaneHeader from './BasePaneHeader.vue';
 
 const { channel, topic } = defineProps<{
-    channel: string;
+    channel?: string;
     topic?: string;
 }>();
 </script>
@@ -12,7 +12,7 @@ const { channel, topic } = defineProps<{
         <div class="flex flex-col">
             <span class="font-bold text-lg text-gray-800 dark:text-gray-100">{{ channel }}</span>
             <span class="text-sm text-gray-500 dark:text-gray-400">
-                Topic: {{ topic || 'No topic set' }}
+                {{ topic || 'No topic set' }}
             </span>
         </div>
     </BasePaneHeader>

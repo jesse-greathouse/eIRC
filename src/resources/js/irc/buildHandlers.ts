@@ -51,5 +51,7 @@ export function buildHandlers(): Record<string, IrcEventHandler[]> {
         [IRC_EVENT_KEYS.RPL_WHOISIDLE]: [whoisHandler],
         [IRC_EVENT_KEYS.RPL_ENDOFWHOIS]: [whoisHandler],
         [IRC_EVENT_KEYS.RPL_WHOISCHANNELS]: [whoisHandler],
+        [IRC_EVENT_KEYS.RPL_WHOISAWAY]: [whoisHandler],
+        [IRC_EVENT_KEYS.RPL_WHOISOPERATOR]: [whoisHandler],
     };
 }

@@ -5,13 +5,12 @@ import { Head } from '@inertiajs/vue3';
 import { type BreadcrumbItem } from '@/types';
 import emitter from '@/lib/emitter';
 
+import { useChatTabs } from '@/composables/useChatTabs';
+import { useIrcLines } from '@/composables/useIrcLines';
+
 import AppLayout from '@/layouts/AppLayout.vue';
 import ContextMenu from '@/components/nav/ChatContextMenu.vue';
 import ConsolePane from '@/components/chat/ConsolePane.vue';
-
-import { useChatTabs } from '@/composables/useChatTabs';
-import { getIrcClient } from '@/composables/useIrcClient';
-import { useIrcLines } from '@/composables/useIrcLines';
 
 const { } = defineProps<{}>();
 

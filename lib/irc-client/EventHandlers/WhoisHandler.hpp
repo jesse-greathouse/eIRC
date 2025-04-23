@@ -31,6 +31,10 @@ inline std::function<void(IRCClient &, const std::string &)> whoisHandler()
 			return handle318(client, line);
 		if (line.find(" 319 ") != std::string::npos)
 			return handle319(client, line);
+		if (line.find(" 301 ") != std::string::npos)
+			return handle301(client, line);
+		if (line.find(" 313 ") != std::string::npos)
+			return handle313(client, line);
 	};
 }
 
@@ -61,6 +65,8 @@ inline void handle311(IRCClient &client, const std::string &line)
 	User *u = findOrCreateUser(client, nick);
 	if (!u->whoisState)
 		u->whoisState.emplace();
+	u->whoisState->username = user; // Save ident/username
+	u->whoisState->host = host;		// Save host separately
 	u->whoisState->realname = realname;
 }
 
@@ -122,17 +128,45 @@ inline void handle318(IRCClient &client, const std::string &line)
 	if (!u || !u->whoisState)
 		return;
 
-	const WhoisState &ws = *u->whoisState;
-	std::stringstream out;
-	out << "WHOIS: " << u->nick << "\n"
-		<< "  Real Name: " << ws.realname << "\n"
-		<< "  Server: " << ws.server << " (" << ws.serverInfo << ")\n"
-		<< "  Channels: " << ws.channels << "\n"
-		<< "  Idle: " << ws.idleSeconds << "s, Signon: " << ws.signonTime;
+	// const WhoisState &ws = *u->whoisState;
+	// std::stringstream out;
+	// out << "WHOIS: " << u->nick << "\n"
+	// 	<< "  Real Name: " << ws.realname << "\n"
+	// 	<< "  Server: " << ws.server << " (" << ws.serverInfo << ")\n"
+	// 	<< "  Channels: " << ws.channels << "\n"
+	// 	<< "  Idle: " << ws.idleSeconds << "s, Signon: " << ws.signonTime;
 
-	client.getLogger().log(out.str());
-	client.getUi().drawOutput(out.str());
+	// client.getLogger().log(out.str());
+	// client.getUi().drawOutput(out.str());
 
 	// Optionally clear WHOIS info
 	// u->whoisState.reset();
+}
+
+inline void handle301(IRCClient &client, const std::string &line)
+{
+	std::istringstream iss(line);
+	std::string prefix, code, target, nick;
+	iss >> prefix >> code >> target >> nick;
+
+	std::string awayMsg;
+	std::getline(iss, awayMsg);
+	awayMsg = awayMsg.substr(2);
+
+	User *u = findOrCreateUser(client, nick);
+	if (!u->whoisState)
+		u->whoisState.emplace();
+	u->whoisState->awayMessage = awayMsg;
+}
+
+inline void handle313(IRCClient &client, const std::string &line)
+{
+	std::istringstream iss(line);
+	std::string prefix, code, target, nick;
+	iss >> prefix >> code >> target >> nick;
+
+	User *u = findOrCreateUser(client, nick);
+	if (!u->whoisState)
+		u->whoisState.emplace();
+	u->whoisState->isOperator = true;
 }

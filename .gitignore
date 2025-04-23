@@ -113,3 +113,6 @@ tmp/*
 
 # misc
 .eirc-cfg.yml
+
+# extra
+commit.txt
