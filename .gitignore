@@ -54,6 +54,13 @@ Makefile
 *.zip
 
 # Ignore binary output folder
+!bin/audit
+!bin/dhp
+!bin/migrate
+!bin/install
+!bin/configure
+!bin/generate-oauth
+!bin/seed
 /bin/
 /dist/
 /out/

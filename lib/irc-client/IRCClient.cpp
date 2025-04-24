@@ -87,9 +87,9 @@ void IRCClient::connect(const std::string &server, int port)
     socket.connect(asio::ip::tcp::endpoint(asio::ip::address::from_string(server), port));
 }
 
-void IRCClient::authenticate(const std::string &nick, const std::string &user)
+void IRCClient::authenticate(const std::string &nick, const std::string &user, const std::string &realname)
 {
-    std::string auth = "NICK " + nick + "\nUSER " + user + " 0 * :" + user + "\n";
+    std::string auth = "NICK " + nick + "\nUSER " + user + " 0 * :" + realname + "\n";
     asio::write(socket, asio::buffer(auth));
 }
 

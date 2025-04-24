@@ -1,9 +1,11 @@
+import { nextTick } from 'vue';
 import type { IrcEventHandler } from '../types';
 import { namesProcessingState } from './rplNameReplyHandler'; // Make sure this is exported
 import { IrcLine } from '@/types/IrcLine';
 import { nanoid } from 'nanoid';
 
-export const rplEndOfNamesHandler: IrcEventHandler = (client, line) => {
+export const rplEndOfNamesHandler: IrcEventHandler = async (client, line) => {
+    await nextTick();
     const channelName = line.params[1];
     if (!channelName) return;
 

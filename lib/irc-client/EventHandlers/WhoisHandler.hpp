@@ -10,8 +10,10 @@
 #include <functional>
 #include <string>
 
+inline void handle301(IRCClient &, const std::string &);
 inline void handle311(IRCClient &, const std::string &);
 inline void handle312(IRCClient &, const std::string &);
+inline void handle313(IRCClient &, const std::string &);
 inline void handle317(IRCClient &, const std::string &);
 inline void handle318(IRCClient &, const std::string &);
 inline void handle319(IRCClient &, const std::string &);

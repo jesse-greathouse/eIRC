@@ -24,11 +24,24 @@ local function send_request(method, endpoint, body)
         opts.body = cjson.encode(body)
     end
 
+    -- Audit request
+    ngx.log(ngx.DEBUG, "🌐 Sending API Request to: ", base_url .. endpoint)
+    ngx.log(ngx.DEBUG, "🌐 Request Method: ", method)
+    if body then
+        ngx.log(ngx.DEBUG, "🌐 Request Body: ", opts.body)
+    end
+
     local res, err = httpc:request_uri(base_url .. endpoint, opts)
 
     if not res then
+        ngx.log(ngx.ERR, "🌐 API request failed: ", err)
+        ngx.log(ngx.ERR, "🌐 API Response Status: ", res.status)
+        ngx.log(ngx.ERR, "🌐 API Response Body: ", res.body or "empty")
         return nil, "API request failed: " .. (err or "unknown error")
     end
+
+    ngx.log(ngx.DEBUG, "🌐 API Response Status: ", res.status)
+    ngx.log(ngx.DEBUG, "🌐 API Response Body: ", res.body or "empty")
 
     if res.status < 200 or res.status >= 300 then
         return nil, "API returned status " .. res.status .. ": " .. (res.body or "")
@@ -37,6 +50,7 @@ local function send_request(method, endpoint, body)
     if res.body and res.body ~= "" then
         local ok, decoded = pcall(cjson.decode, res.body)
         if not ok then
+            ngx.log(ngx.ERR, "🌐 Failed to decode JSON: ", res.body)
             return nil, "Failed to decode JSON: " .. tostring(res.body)
         end
         return decoded

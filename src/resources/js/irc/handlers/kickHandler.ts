@@ -1,8 +1,10 @@
+import { nextTick } from 'vue';
 import type { IrcEventHandler } from '../types';
 import { IrcLine } from '@/types/IrcLine';
 import { nanoid } from 'nanoid';
 
-export const kickHandler: IrcEventHandler = (client, line) => {
+export const kickHandler: IrcEventHandler = async (client, line) => {
+    await nextTick();
     const channelName = line.params[0];
     const kickedNick = line.params[1];
     const reason = line.params[2] ?? '';

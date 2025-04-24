@@ -20,7 +20,7 @@ local http = require "jesse-greathouse.eIRC.http"
         Enter WebSocket receive loop → pipe into IRC
         On disconnect: shutdown IRC and WebSocket
 --]]
-function _M.run(nick, server_addr, port, channels, instance_id)
+function _M.run(nick, realname, server_addr, port, channels, instance_id)
     -- Validate instance ID
     if not instance_id or type(instance_id) ~= "string" or instance_id == "" then
         return http.exit(400, "Missing or invalid instance_id")
@@ -38,7 +38,7 @@ function _M.run(nick, server_addr, port, channels, instance_id)
     end
 
     -- Spawn IRC client process if it isn’t running yet
-    local ok, err = irc.start_client(nick, server_addr, port, channels, instance_id)
+    local ok, err = irc.start_client(nick, realname, server_addr, port, channels, instance_id)
     if not ok then
         wb:send_text("IRC client startup failed: " .. (err or "unknown error"))
         return http.exit(444, "IRC client startup failed")

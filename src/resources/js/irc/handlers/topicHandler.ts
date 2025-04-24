@@ -1,8 +1,10 @@
+import { nextTick } from 'vue';
 import type { IrcEventHandler } from '../types';
 import { IrcLine } from '@/types/IrcLine';
 import { nanoid } from 'nanoid';
 
-export const topicHandler: IrcEventHandler = (client, line) => {
+export const topicHandler: IrcEventHandler = async (client, line) => {
+    await nextTick();
     const channelName = line.params[0];
     const topic = line.params[1];
     if (!channelName || !topic) return;

@@ -1,10 +1,21 @@
+import { nextTick } from 'vue';
 import type { IrcEventHandler } from '../types';
 import { IrcLine } from '@/types/IrcLine';
 import { nanoid } from 'nanoid';
 
-export const quitHandler: IrcEventHandler = (client, line) => {
+export const quitHandler: IrcEventHandler = async (client, line) => {
+    await nextTick();
     const userNick = line.prefix?.split('!')[0];
     if (!userNick) return;
+
+    let quitMsg = '';
+
+    if (line.params?.length) {
+        quitMsg += ': ';
+        quitMsg += line.params.filter(str => typeof str === 'string') // Ensure it's a string
+            .map(str => str.replace(/^"|"$/g, '')) // Remove leading/trailing quotes
+            .join(' ');
+    }
 
     const user = client.getOrCreateUser(userNick);
 
@@ -12,7 +23,7 @@ export const quitHandler: IrcEventHandler = (client, line) => {
         channel.removeUser(user);
 
         const tabId = `channel-${channel.name}`;
-        const message = `${userNick} has quit`;
+        const message = `${userNick} has quit ${quitMsg}`;
         client.opts.addUserLineTo?.(tabId, new IrcLine({
             id: nanoid(),
             timestamp: Date.now(),

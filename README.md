@@ -13,7 +13,7 @@ _<small>The architecture is represented using a C4 Container Diagram.</small>_
 
 ## 📌 eIRC Technical Specs [Technical Architecture Overview](https://raw.githubusercontent.com/jesse-greathouse/eIRC/refs/heads/main/eIRC-Technical-Architecture-Overview.pdf)
 
-## 📌 Nginx, PHP, Laravel, C++. LuaJit, Vue [Component Licensing](https://raw.githubusercontent.com/jesse-greathouse/eIRC/refs/heads/main/eIRC-Licensing-Overview.pdf)
+## 📌 Nginx, PHP, Laravel, C++, LuaJit, Vue [Component Licensing](https://raw.githubusercontent.com/jesse-greathouse/eIRC/refs/heads/main/eIRC-Licensing-Overview.pdf)
 
 The system is composed of three core architectural tiers:
 

@@ -24,6 +24,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'nick',
+        'settings',
     ];
 
     /**
@@ -46,23 +48,38 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'settings' => 'array',
         ];
+    }
+
+    public function profile()
+    {
+        return $this->hasOne(Profile::class);
     }
 
     protected static function booted()
     {
         static::saving(function ($user) {
-            if (empty($user->nick) && !empty($user->name)) {
+            if (!empty($user->name)) {
                 $base = Str::slug($user->name, '_'); // e.g. jesse_greathouse
-                $nick = $base;
-                $i = 1;
 
-                // Ensure uniqueness by appending a suffix if necessary
-                while (self::where('nick', $nick)->where('id', '!=', $user->id)->exists()) {
-                    $nick = $base . '_' . $i++;
+                // Assign realname only if it's not set (realname is permanent)
+                if (empty($user->realname)) {
+                    $realname = $base;
+                    $j = 1;
+
+                    // Ensure uniqueness for realname
+                    while (self::where('realname', $realname)->where('id', '!=', $user->id)->exists()) {
+                        $realname = $base . '_' . $j++;
+                    }
+
+                    $user->realname = $realname;
                 }
 
-                $user->nick = $nick;
+                if (empty($user->nick)) {
+                    $user->nick = $base;
+                }
+
             }
         });
     }

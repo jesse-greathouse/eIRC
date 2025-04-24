@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
-
 use Illuminate\Http\JsonResponse;
 
 use Laravel\Passport\Token;
+
+use App\Http\Controllers\Controller,
+    App\Http\Resources\AuthenticatedUserResource;
 
 class AuthUserLookupController extends Controller
 {
@@ -25,9 +26,9 @@ class AuthUserLookupController extends Controller
             abort(401, 'Token expired');
         }
 
-        // Copy the User object and delete the token
-        $user = $token->user;
+        $user = $token->user()->with(['profile.selectedAvatar'])->first();
         $token->delete();
-        return response()->json($user);
+
+        return response()->json(new AuthenticatedUserResource($user));
     }
 }

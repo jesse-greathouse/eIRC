@@ -1,6 +1,8 @@
+import { nextTick } from 'vue';
 import type { IrcEventHandler } from '../types';
 
-export const modeHandler: IrcEventHandler = (client, line) => {
+export const modeHandler: IrcEventHandler = async (client, line) => {
+    await nextTick();
     const [target, mode, modeTarget] = line.params;
     if (!target || !mode || !modeTarget) return;
 

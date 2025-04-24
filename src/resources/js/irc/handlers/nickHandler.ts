@@ -1,8 +1,10 @@
+import { nextTick } from 'vue';
 import type { IrcEventHandler } from '../types';
 import { IrcLine } from '@/types/IrcLine';
 import { nanoid } from 'nanoid';
 
-export const nickHandler: IrcEventHandler = (client, line) => {
+export const nickHandler: IrcEventHandler = async (client, line) => {
+    await nextTick();
     const oldNick = line.prefix?.split('!')[0];
     const newNick = line.params[0];
     if (!oldNick || !newNick) return;

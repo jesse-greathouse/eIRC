@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
 
         // Start client connection
         client.connect(args.server, args.port);
-        client.authenticate(args.nick, args.user);
+        client.authenticate(args.nick, args.user, args.realname);
 
         // Start background input thread (now joinable)
         client.startInputLoop();

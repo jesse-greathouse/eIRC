@@ -164,6 +164,7 @@ export class IrcClient {
             user = new User(nick);
             this.users.set(nick, user);
         }
+
         return user;
     }
 

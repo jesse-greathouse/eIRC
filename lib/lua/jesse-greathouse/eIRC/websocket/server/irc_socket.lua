@@ -1,3 +1,4 @@
+local cjson = require "cjson"
 local socket = ngx.socket
 local pipe = require "ngx.pipe"
 
@@ -13,7 +14,7 @@ local function get_socket_file(instance_id)
 end
 
 -- Spawns a new IRC client process unless already running for this instance
-function _M.start_client(nick, server, port, channels, instance_id)
+function _M.start_client(nick, realname, server, port, channels, instance_id)
   if not (nick and server and port and channels and instance_id) then
     ngx.log(ngx.ERR, "Missing required IRC client parameters")
     return nil, "Missing parameters"
@@ -25,17 +26,31 @@ function _M.start_client(nick, server, port, channels, instance_id)
 
   local socket_dir = env.var_dir() .. "/socket"
   local log_dir = env.log_dir() .. "/irc-client"
+  local channels_str = ""
+
+  if type(channels) == "table" then
+    if #channels > 0 then
+      channels_str = table.concat(channels, ",")
+    end
+  elseif type(channels) == "string" then
+    channels_str = channels
+  end
 
   local args = {
-    env.bin_dir() .. "/irc-client",
-    "--nick=" .. nick,
-    "--server=" .. server,
-    "--port=" .. tostring(port),
-    "--channels=" .. channels,
-    "--listen=" .. socket_dir,
-    "--log=" .. log_dir,
-    "--instance=" .. instance_id
+      env.bin_dir() .. "/irc-client",
+      "--nick=" .. nick,
+      "--realname=" .. realname,
+      "--server=" .. server,
+      "--port=" .. tostring(port),
+      "--listen=" .. socket_dir,
+      "--log=" .. log_dir,
+      "--instance=" .. instance_id
   }
+
+  -- Only add --channels if there are any to join
+  if channels_str ~= "" then
+    table.insert(args, "--channels=" .. channels_str)
+  end
 
   local proc, err = pipe.spawn(args, {
     merge_stderr = true,

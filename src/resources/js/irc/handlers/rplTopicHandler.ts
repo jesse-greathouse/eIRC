@@ -1,8 +1,10 @@
+import { nextTick } from 'vue';
 import type { IrcEventHandler } from '../types';
 import { IrcLine } from '@/types/IrcLine';
 import { nanoid } from 'nanoid';
 
-export const rplTopicHandler: IrcEventHandler = (client, line) => {
+export const rplTopicHandler: IrcEventHandler = async (client, line) => {
+    await nextTick();
     const channelName = line.params[1];
     const topic = line.params[2];
 

@@ -29,11 +29,39 @@ export interface SharedData extends PageProps {
 export interface User {
     id: number;
     name: string;
+    nick: string;
+    realname: string;
     email: string;
     avatar?: string;
     email_verified_at: string | null;
     created_at: string;
     updated_at: string;
+    channels: array;
+}
+
+export interface Avatar {
+    id: number;
+    profile_id: number;
+    base64_data: string; // Full data URI including 'data:image/...;base64,...'
+    created_at: string;
+    updated_at: string;
+}
+
+export interface Profile {
+    id: number;
+    user_id: number;
+    bio: string | null;
+    timezone: string;
+    x_link: string | null;
+    instagram_link: string | null;
+    tiktok_link: string | null;
+    youtube_link: string | null;
+    facebook_link: string | null;
+    pinterest_link: string | null;
+    created_at: string;
+    updated_at: string;
+    selected_avatar_id: number | null;
+    selected_avatar?: Avatar | null;
 }
 
 export type BreadcrumbItemType = BreadcrumbItem;

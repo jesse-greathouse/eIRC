@@ -13,14 +13,15 @@
 
 struct ParsedArgs
 {
-	std::string nick;
-	std::string user;
-	std::string server;
-	int port;
-	std::vector<std::string> channels;
-	std::string logPath;
-	std::string listenSocket;
-	std::string instance;
+    std::string nick;
+    std::string user;     // <-- will mirror realname
+    std::string realname; // <-- received from CLI or API
+    std::string server;
+    int port;
+    std::vector<std::string> channels;
+    std::string logPath;
+    std::string listenSocket;
+    std::string instance;
 };
 
 class ArgParser
@@ -35,4 +36,5 @@ private:
 
 	std::string makeLogPath(const std::string &instance, const std::string &logDir) const;
 	std::string makeSocketPath(const std::string &instance, const std::string &listenDir) const;
+	void applyUserAndRealnameDefaults(const std::map<std::string, std::string> &args);
 };

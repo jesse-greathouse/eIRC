@@ -1,7 +1,9 @@
+import { nextTick } from 'vue';
 import type { IrcEventHandler } from '../types';
 import { Whois } from '../models/Whois';
 
-export const whoisHandler: IrcEventHandler = (client, line) => {
+export const whoisHandler: IrcEventHandler = async (client, line) => {
+    await nextTick();
     const code = line.command; // e.g., '311', '312', '317', '319', '318'
     const nick = line.params[1];
     const user = client.getOrCreateUser(nick);

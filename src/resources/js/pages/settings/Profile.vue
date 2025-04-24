@@ -9,102 +9,127 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
-import { type BreadcrumbItem, type SharedData, type User } from '@/types';
+import { type BreadcrumbItem, type User, type Profile } from '@/types';
 
 interface Props {
     mustVerifyEmail: boolean;
     status?: string;
+    user: User;
+    profile: Profile;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
 
 const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Profile settings',
-        href: '/settings/profile',
-    },
+    { title: 'Profile settings', href: '/settings/profile' },
 ];
 
-const page = usePage<SharedData>();
-const user = page.props.auth.user as User;
-
-const form = useForm({
-    name: user.name,
-    email: user.email,
-    nick: user.nick || '',
-    channels: user.channels || '',
+const formUser = useForm({
+    name: props.user.name,
+    email: props.user.email,
+    nick: props.user.nick || '',
 });
 
-const submit = () => {
-    form.patch(route('profile.update'), {
-        preserveScroll: true,
-    });
+const formProfile = useForm({
+    timezone: props.profile.timezone || 'UTC',
+    bio: props.profile.bio || '',
+    x_link: props.profile.x_link || '',
+    instagram_link: props.profile.instagram_link || '',
+    tiktok_link: props.profile.tiktok_link || '',
+    youtube_link: props.profile.youtube_link || '',
+    facebook_link: props.profile.facebook_link || '',
+    pinterest_link: props.profile.pinterest_link || '',
+});
+
+const submitUser = () => {
+    formUser.put(route('api.user.update'), { preserveScroll: true });
+};
+
+const submitProfile = () => {
+    formProfile.patch(route('profile.update'), { preserveScroll: true });
 };
 </script>
 
 <template>
     <AppLayout :breadcrumbs="breadcrumbs">
-
         <Head title="Profile settings" />
 
         <SettingsLayout>
-            <div class="flex flex-col space-y-6">
-                <HeadingSmall title="Profile information" description="Update your name and email address" />
-
-                <form @submit.prevent="submit" class="space-y-6">
-                    <div class="grid gap-2">
-                        <Label for="name">Name</Label>
-                        <Input id="name" class="mt-1 block w-full" v-model="form.name" required autocomplete="name"
-                            placeholder="Full name" />
-                        <InputError class="mt-2" :message="form.errors.name" />
-                    </div>
-
-                    <div class="grid gap-2">
-                        <Label for="email">Email address</Label>
-                        <Input id="email" type="email" class="mt-1 block w-full" v-model="form.email" required
-                            autocomplete="username" placeholder="Email address" />
-                        <InputError class="mt-2" :message="form.errors.email" />
-                    </div>
-
-                    <div v-if="mustVerifyEmail && !user.email_verified_at">
-                        <p class="-mt-4 text-sm text-muted-foreground">
-                            Your email address is unverified.
-                            <Link :href="route('verification.send')" method="post" as="button"
-                                class="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:!decoration-current dark:decoration-neutral-500">
-                            Click here to resend the verification email.
-                            </Link>
-                        </p>
-
-                        <div v-if="status === 'verification-link-sent'" class="mt-2 text-sm font-medium text-green-600">
-                            A new verification link has been sent to your email address.
+            <div class="flex flex-col space-y-10">
+                <!-- User Information Form -->
+                <div>
+                    <HeadingSmall title="Account Information" description="Update your name, email, and IRC nickname" />
+                    <form @submit.prevent="submitUser" class="space-y-6">
+                        <div class="grid gap-2">
+                            <Label for="name">Name</Label>
+                            <Input id="name" v-model="formUser.name" required />
+                            <InputError class="mt-2" :message="formUser.errors.name" />
                         </div>
-                    </div>
 
-                    <div class="grid gap-2">
-                        <Label for="nick">IRC Nickname</Label>
-                        <Input id="nick" class="mt-1 block w-full" v-model="form.nick" placeholder="e.g., jesse123" />
-                        <InputError class="mt-2" :message="form.errors.nick" />
-                    </div>
+                        <div class="grid gap-2">
+                            <Label for="email">Email address</Label>
+                            <Input id="email" type="email" v-model="formUser.email" required />
+                            <InputError class="mt-2" :message="formUser.errors.email" />
+                        </div>
 
-                    <div class="grid gap-2">
-                        <Label for="channels">IRC Channels</Label>
-                        <Input id="channels" class="mt-1 block w-full" v-model="form.channels"
-                            placeholder="#general,#dev" />
-                        <InputError class="mt-2" :message="form.errors.channels" />
-                    </div>
+                        <div v-if="mustVerifyEmail && !props.user.email_verified_at">
+                            <p class="-mt-4 text-sm text-muted-foreground">
+                                Your email address is unverified.
+                                <Link :href="route('verification.send')" method="post" as="button">
+                                    Click here to resend the verification email.
+                                </Link>
+                            </p>
+                            <div v-if="status === 'verification-link-sent'" class="mt-2 text-sm font-medium text-green-600">
+                                A new verification link has been sent to your email address.
+                            </div>
+                        </div>
 
-                    <div class="flex items-center gap-4">
-                        <Button :disabled="form.processing">Save</Button>
+                        <div class="grid gap-2">
+                            <Label for="nick">IRC Nickname</Label>
+                            <Input id="nick" v-model="formUser.nick" placeholder="e.g., jesse123" />
+                            <InputError class="mt-2" :message="formUser.errors.nick" />
+                        </div>
 
-                        <Transition enter-active-class="transition ease-in-out" enter-from-class="opacity-0"
-                            leave-active-class="transition ease-in-out" leave-to-class="opacity-0">
-                            <p v-show="form.recentlySuccessful" class="text-sm text-neutral-600">Saved.</p>
-                        </Transition>
-                    </div>
-                </form>
+                        <div class="flex items-center gap-4">
+                            <Button :disabled="formUser.processing">Save Account Info</Button>
+                            <p v-show="formUser.recentlySuccessful" class="text-sm text-neutral-600">Saved.</p>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Profile Form -->
+                <div>
+                    <HeadingSmall title="Profile Details" description="Manage additional profile information" />
+                    <form @submit.prevent="submitProfile" class="space-y-6">
+                        <div class="grid gap-2">
+                            <Label for="timezone">Timezone</Label>
+                            <Input id="timezone" v-model="formProfile.timezone" />
+                            <InputError class="mt-2" :message="formProfile.errors.timezone" />
+                        </div>
+
+                        <div class="grid gap-2">
+                            <Label for="bio">Bio</Label>
+                            <Input id="bio" v-model="formProfile.bio" />
+                            <InputError class="mt-2" :message="formProfile.errors.bio" />
+                        </div>
+
+                        <div class="grid gap-2">
+                            <Label for="x_link">Twitter/X</Label>
+                            <Input id="x_link" v-model="formProfile.x_link" />
+                            <InputError class="mt-2" :message="formProfile.errors.x_link" />
+                        </div>
+
+                        <!-- Add other social inputs here similarly -->
+
+                        <div class="flex items-center gap-4">
+                            <Button :disabled="formProfile.processing">Save Profile</Button>
+                            <p v-show="formProfile.recentlySuccessful" class="text-sm text-neutral-600">Saved.</p>
+                        </div>
+                    </form>
+                </div>
+
+                <DeleteUser />
             </div>
-
-            <DeleteUser />
         </SettingsLayout>
     </AppLayout>
 </template>

@@ -1,9 +1,11 @@
+import { nextTick } from 'vue';
 import type { IrcEventHandler } from '../types';
 
 // Track ongoing NAMES per channel
 export const namesProcessingState = new Map<string, boolean>();
 
-export const rplNameReplyHandler: IrcEventHandler = (client, line) => {
+export const rplNameReplyHandler: IrcEventHandler = async (client, line) => {
+    await nextTick();
     const channelName = line.params[2];
     const namesList = line.params[3]?.trim().split(' ') ?? [];
     if (!channelName || namesList.length === 0) return;

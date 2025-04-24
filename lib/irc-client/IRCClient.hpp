@@ -25,7 +25,7 @@ public:
 	IRCClient(asio::io_context &, Logger &, IOAdapter &, const std::vector<std::string> &channels);
 
 	void connect(const std::string &server, int port);
-	void authenticate(const std::string &nick, const std::string &user);
+	void authenticate(const std::string &nick, const std::string &user, const std::string &realname);
 	void startInputLoop();
 	void readLoop(const std::vector<std::string> &channels);
 	void signoff(const std::map<std::string, Channel> &channels, const std::string &quitMessage);

@@ -1,6 +1,8 @@
+import { nextTick } from 'vue';
 import type { IrcEventHandler } from '../types';
 
-export const privmsgHandler: IrcEventHandler = (client, line) => {
+export const privmsgHandler: IrcEventHandler = async (client, line) => {
+    await nextTick();
     const [target, message] = line.params;
     const senderNick = line.prefix?.split('!')[0] ?? 'unknown';
 

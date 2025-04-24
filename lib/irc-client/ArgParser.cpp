@@ -23,9 +23,8 @@ ArgParser::ArgParser(int argc, char *argv[])
 			args[arg.substr(2, eq - 2)] = arg.substr(eq + 1);
 		}
 	}
+	applyUserAndRealnameDefaults(args);
 
-	parsed.nick = args["nick"];
-	parsed.user = args["nick"];
 	parsed.server = args["server"];
 	parsed.port = std::stoi(args["port"]);
 	parsed.instance = (args.count("instance") && !args["instance"].empty()) ? args["instance"] : makeInstanceId();
@@ -85,4 +84,20 @@ std::string ArgParser::makeSocketPath(const std::string &instance, const std::st
 	{
 		return (std::filesystem::current_path() / socketFile).string();
 	}
+}
+
+void ArgParser::applyUserAndRealnameDefaults(const std::map<std::string, std::string> &args)
+{
+	auto nickIt = args.find("nick");
+	if (nickIt == args.end() || nickIt->second.empty())
+	{
+		throw std::invalid_argument("Missing required argument: --nick");
+	}
+
+	parsed.nick = nickIt->second;
+
+	auto realnameIt = args.find("realname");
+	parsed.realname = (realnameIt != args.end() && !realnameIt->second.empty()) ? realnameIt->second : parsed.nick;
+
+	parsed.user = parsed.realname; // Keep user = realname
 }

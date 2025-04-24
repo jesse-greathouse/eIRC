@@ -2,14 +2,17 @@
 
 namespace App\Http\Controllers\Settings;
 
-use App\Http\Controllers\Controller;
-use App\Http\Requests\Settings\ProfileUpdateRequest;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Inertia\Inertia;
-use Inertia\Response;
+use Illuminate\Contracts\Auth\MustVerifyEmail,
+    Illuminate\Http\RedirectResponse,
+    Illuminate\Http\Request,
+    Illuminate\Support\Facades\Auth;
+
+use Inertia\Inertia,
+    Inertia\Response;
+
+use App\Http\Controllers\Controller,
+    App\Http\Requests\ProfileUpdateRequest,
+    App\Models\Profile;
 
 class ProfileController extends Controller
 {
@@ -18,9 +21,14 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): Response
     {
+        $user = $request->user();
+        $profile = $user->profile ?? new Profile(['user_id' => $user->id]);
+
         return Inertia::render('settings/Profile', [
-            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
+            'mustVerifyEmail' => $user instanceof MustVerifyEmail,
             'status' => $request->session()->get('status'),
+            'user' => $user,
+            'profile' => $profile,
         ]);
     }
 
@@ -29,15 +37,18 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $user = $request->user();
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
         }
 
-        $request->user()->save();
+        $profile = $user->profile ?? new Profile(['user_id' => $user->id]);
 
-        return to_route('profile.edit');
+        $profile->fill($request->validated());
+        $profile->save();
+
+        return to_route('profile.edit')->with('status', 'profile-updated');
     }
 
     /**
