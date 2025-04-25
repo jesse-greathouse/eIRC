@@ -24,6 +24,7 @@ class ProfileUpdateRequest extends FormRequest
             'youtube_link' => ['nullable', 'url'],
             'facebook_link' => ['nullable', 'url'],
             'pinterest_link' => ['nullable', 'url'],
+            'avatar' => ['nullable', 'file', 'image', 'max:2048'], // Accept image files
             'selected_avatar_id' => ['nullable', 'exists:avatars,id'],
         ];
     }

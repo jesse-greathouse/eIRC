@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watchEffect, watch } from 'vue';
+import { computed, ref } from 'vue';
 import type { IrcLine } from '@/types/IrcLine';
 import { classifyLine, getUser, renderEventText } from './helpers';
 import { getIrcClient } from '@/composables/useIrcClient';
@@ -7,7 +7,6 @@ import ChannelPaneHeader from './ChannelPaneHeader.vue';
 import ChannelUserListCard from './ChannelUserListCard.vue';
 import BaseChatPane from './BaseChatPane.vue';
 import ChatInput from './ChatInput.vue';
-import { User } from '@/irc/models/User';
 
 const emit = defineEmits<{
     (e: 'switch-tab', tabId: string): void;
@@ -28,22 +27,9 @@ const channel = computed(() => {
 const userVersion = ref('');
 
 const channelUsers = computed(() => {
-    userVersion.value; // Dependency for reactivity
+    void userVersion.value;  // Dependency for reactivity
     return channel.value?.users ?? [];
 });
-
-// watch(channelUsers, (oldUsers, newUsers) => {
-//     console.log('Channel users updated:');
-//     if (oldUsers instanceof Set) {
-//         console.log("oldUsers Set size");
-//         console.log(oldUsers.size); // TypeScript now knows it's a Set
-//     }
-
-//     if (newUsers instanceof Set) {
-//         console.log("newUsers Set size");
-//         console.log(newUsers.size); // TypeScript now knows it's a Set
-//     }
-// });
 </script>
 
 <template>
@@ -56,7 +42,7 @@ const channelUsers = computed(() => {
         <template #default="{ tabLines }">
             <div class="flex w-full h-full gap-4">
                 <!-- Chat Buffer -->
-                <ul class="flex-1 text-sm text-gray-700 dark:text-gray-300 space-y-1">
+                <ul class="flex-1 text-sm text-gray-700 dark:text-gray-300 space-y-1 pt-4">
                     <li v-for="(line, index) in tabLines" :key="line.id ?? index">
                         <template v-if="classifyLine(line, 'channel') === 'message'">
                             <span class="font-medium text-indigo-500">{{ getUser(line) }}</span>:
@@ -72,7 +58,7 @@ const channelUsers = computed(() => {
                 </ul>
 
                 <!-- User List -->
-                <div class="w-[250px] border-l border-gray-300 dark:border-gray-700 pl-4">
+                <div class="w-[250px] border-l border-gray-300 dark:border-gray-700 pl-4 py-4">
                     <div
                         class="w-full p-4 bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700">
                         <div class="flow-root">

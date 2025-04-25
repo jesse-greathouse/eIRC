@@ -12,21 +12,34 @@ use Inertia\Inertia,
 
 use App\Http\Controllers\Controller,
     App\Http\Requests\ProfileUpdateRequest,
+    App\Models\Avatar,
     App\Models\Profile;
 
 class ProfileController extends Controller
 {
     /**
-     * Show the user's profile settings page.
+     * Show the user's account settings page.
      */
+    public function account(Request $request): \Inertia\Response
+    {
+        return Inertia::render('settings/Account', [
+            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
+            'status' => $request->session()->get('status'),
+            'user' => $request->user(),
+        ]);
+    }
+
     public function edit(Request $request): Response
     {
         $user = $request->user();
+
+        // Ensure profile exists
         $profile = $user->profile ?? new Profile(['user_id' => $user->id]);
 
+        // Eager load selectedAvatar relationship
+        $profile->load('selectedAvatar');
+
         return Inertia::render('settings/Profile', [
-            'mustVerifyEmail' => $user instanceof MustVerifyEmail,
-            'status' => $request->session()->get('status'),
             'user' => $user,
             'profile' => $profile,
         ]);
@@ -37,15 +50,40 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
+        // Get the authenticated user from session
         $user = $request->user();
 
-        if ($user->isDirty('email')) {
-            $user->email_verified_at = null;
+        // Either get existing profile or create a new one
+        $profile = $user->profile ?? new Profile();
+
+        // Always associate profile with session user
+        $profile->user_id = $user->id;
+
+        // Fill in validated profile data
+        $profile->fill($request->validated());
+
+        // Handle avatar upload
+        if ($request->hasFile('avatar')) {
+            $file = $request->file('avatar');
+
+            // Get file contents and mime type
+            $contents = file_get_contents($file->getRealPath());
+            $mimeType = $file->getMimeType();
+
+            // Convert to base64 data URI
+            $base64Data = 'data:' . $mimeType . ';base64,' . base64_encode($contents);
+
+            // Save as a new Avatar
+            $avatar = new Avatar();
+            $avatar->profile_id = $profile->id;
+            $avatar->base64_data = $base64Data;
+            $avatar->save();
+
+            // Optionally, set as selected avatar
+            $profile->selected_avatar_id = $avatar->id;
+            $profile->save();
         }
 
-        $profile = $user->profile ?? new Profile(['user_id' => $user->id]);
-
-        $profile->fill($request->validated());
         $profile->save();
 
         return to_route('profile.edit')->with('status', 'profile-updated');
