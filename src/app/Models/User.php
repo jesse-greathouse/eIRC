@@ -26,6 +26,7 @@ class User extends Authenticatable
         'password',
         'nick',
         'settings',
+        'channels',
     ];
 
     /**

@@ -19,7 +19,11 @@ const emit = defineEmits<{
         <button v-for="tab in props.tabs" :key="tab.id" @click="emit('update-tab', tab.id)"
             class="block w-full text-left px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
             :class="{ 'bg-gray-300 dark:bg-gray-700 font-semibold': tab.id === props.activeTab }">
-            {{ tab.label }}
+
+            <!-- Slot support for tab customization -->
+            <slot name="tab" :tab="tab">
+                {{ tab.label }}
+            </slot>
         </button>
     </div>
 </template>

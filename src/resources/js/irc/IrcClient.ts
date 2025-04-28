@@ -7,6 +7,8 @@ import { parseIrcLine } from '@/lib/parseIrcLine';
 export class IrcClient {
     private eventHandlers = new Map<string, IrcEventHandler[]>();
     private socket: WebSocket | null = null;
+    private ready: boolean = false;
+    private batchQueue: ((client: IrcClient) => void)[] = [];
 
     public nick: string = '';
     public users: Map<string, User> = new Map();
@@ -158,6 +160,11 @@ export class IrcClient {
         return Array.from(this.channels.keys());
     }
 
+    getUser(nick?: string): User | null {
+        if (!nick) return null;
+        return this.users.get(nick) ?? null;
+    }
+
     getOrCreateUser(nick: string): User {
         let user = this.users.get(nick);
         if (!user) {
@@ -186,6 +193,40 @@ export class IrcClient {
         channel.addUser(user);
 
         return { user, channel };
+    }
+
+    setReady(ready: boolean): void {
+        this.ready = ready;
+
+        if (ready) {
+            while (this.batchQueue.length > 0) {
+                const task = this.batchQueue.shift();
+
+                if (task) {
+                    try {
+                        task(this);
+                    } catch (err) {
+                        console.error(`[IrcClient] Error executing task:`, err);
+                    }
+                } else {
+                    console.warn(`[IrcClient] Encountered undefined task in batchQueue.`);
+                }
+            }
+        }
+    }
+
+    isReady(): boolean {
+        return this.ready;
+    }
+
+    onReady(tasks: ((client: IrcClient) => void)[]): void {
+        if (this.ready) {
+            // Execute immediately if ready
+            tasks.forEach(task => task(this));
+        } else {
+            // Queue tasks for later
+            this.batchQueue.push(...tasks);
+        }
     }
 
     serialize(): object {

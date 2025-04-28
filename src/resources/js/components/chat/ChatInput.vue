@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { parseIrcLine } from '@/lib/parseIrcLine';
+import { IrcClient } from '@/irc/IrcClient';
 import { useChatTabs } from '@/composables/useChatTabs';
 import { getIrcClient } from '@/composables/useIrcClient';
 import { commandMap } from '@/chat-commands/commandMap';
@@ -17,13 +18,17 @@ const props = defineProps<{
 
 const input = ref('');
 const { getNameByTabId } = useChatTabs();
-const client = getIrcClient();
+const client = ref<Awaited<ReturnType<typeof getIrcClient>> | null>(null);
 const target = computed(() => getNameByTabId(props.tabId));
-const nick = computed(() => client?.nick || '...');
+const nick = computed(() => client.value?.nick || '...');
+
+onMounted(async () => {
+    client.value = await getIrcClient();
+});
 
 async function handleSubmit() {
     const rawInput = input.value.trim();
-    if (!rawInput || !client) return;
+    if (!rawInput || !client.value) return;
 
     try {
         if (rawInput.startsWith('/')) {
@@ -45,15 +50,15 @@ async function handleSubmit() {
                     tabId: props.tabId,
                     nick: nick.value,
                     target: target.value,
-                    client,
+                    client: client.value as IrcClient,
                     inject: (tabId, line) => {
-                        client.opts.addUserLineTo?.(tabId, line);
+                        client.value?.opts.addUserLineTo?.(tabId, line);
                     },
                     switchTab: (tabId) => emit('switch-tab', tabId),
                 });
             } else {
-                await client.input(commandText);
-                client.opts.addUserLineTo?.('console', new IrcLine({
+                await client.value.input(commandText);
+                client.value.opts.addUserLineTo?.('console', new IrcLine({
                     id: nanoid(),
                     timestamp: Date.now(),
                     raw: `→ ${commandText}`,
@@ -63,8 +68,8 @@ async function handleSubmit() {
                 }));
             }
         } else {
-            await client.msg(target.value, rawInput);
-            client.opts.addUserLineTo?.(props.tabId, new IrcLine({
+            await client.value.msg(target.value, rawInput);
+            client.value.opts.addUserLineTo?.(props.tabId, new IrcLine({
                 id: nanoid(),
                 timestamp: Date.now(),
                 raw: `<${nick.value}> ${rawInput}`,

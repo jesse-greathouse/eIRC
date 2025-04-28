@@ -6,9 +6,10 @@ import type { IrcEventHandler } from '../types';
  */
 export const welcomeHandler: IrcEventHandler = async (client, line) => {
     await nextTick();
-    // Example raw: ":irc.aries 001 jesse_greathouse :Welcome to the network..."
     const nick = line.params[0];
     if (nick) {
         client.nick = nick;
+        // Trigger API sync via onWelcome hook
+        client.opts.onWelcome?.(nick);
     }
 };

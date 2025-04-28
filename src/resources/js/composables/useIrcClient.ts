@@ -3,14 +3,18 @@ import { IrcClient } from '@/irc/IrcClient';
 import { buildHandlers } from '@/irc/buildHandlers';
 import emitter from '@/lib/emitter';
 import { getTabKey } from '@/lib/getTabKey';
+import { useClient } from '@/composables/useClient';
 import { useIrcLines } from '@/composables/useIrcLines';
 
-/**
- * IrcClient is being instantiated as a singleton.
- * There can only be one instance of IrcClient per user.
- */
 const ircClientRef = ref<IrcClient | null>(null);
 
+// Promise to resolve once the IRC client is ready
+let clientReadyPromise: Promise<IrcClient> | null = null;
+let resolveClientReady: ((client: IrcClient) => void) | null = null;
+
+/**
+ * Instantiates the singleton IrcClient.
+ */
 export function useIrcClient(chat_token: string) {
     if (ircClientRef.value) return ircClientRef.value;
 
@@ -18,6 +22,7 @@ export function useIrcClient(chat_token: string) {
         throw new Error('chat_token is required to initialize the IRC client');
     }
 
+    const { coreApi } = useClient('core');
     const { addLinesTo, addUserLineTo } = useIrcLines();
 
     const client = new IrcClient(
@@ -39,6 +44,21 @@ export function useIrcClient(chat_token: string) {
                 emitter.emit('new-privmsg', nick);
             },
             addUserLineTo,
+            onWelcome: async (nick) => {
+                // WHOIS for accurate realname update
+                await client?.whois(nick);
+            },
+            onNick: async (oldNick, newNick) => {
+                // WHOIS to sync client data
+                await client?.whois(newNick);
+            },
+            onWhois: async (nick, realName) => {
+                try {
+                    await coreApi.updateUser(realName, { nick, realname: realName });
+                } catch (err) {
+                    console.error(`[API Sync] Failed to sync onWhois:`, err);
+                }
+            },
         }
     );
 
@@ -50,17 +70,37 @@ export function useIrcClient(chat_token: string) {
 
     ircClientRef.value = client;
 
+    // Resolve the promise now that it's available
+    if (resolveClientReady) {
+        resolveClientReady(client);
+    }
+
     // Clean up when user leaves the site
     if (typeof window !== 'undefined') {
         window.addEventListener('beforeunload', () => {
-        ircClientRef.value?.disconnect();
-        ircClientRef.value = null;
+            ircClientRef.value?.disconnect();
+            ircClientRef.value = null;
+            clientReadyPromise = null;
+            resolveClientReady = null;
         });
     }
 
     return client;
 }
 
-export function getIrcClient(): IrcClient | null {
-  return ircClientRef.value as IrcClient | null;
+/**
+ * Returns a promise that resolves to the IrcClient once it's available.
+ */
+export async function getIrcClient(): Promise<IrcClient> {
+    if (ircClientRef.value) {
+        return ircClientRef.value as IrcClient;
+    }
+
+    if (!clientReadyPromise) {
+        clientReadyPromise = new Promise<IrcClient>((resolve) => {
+            resolveClientReady = resolve;
+        });
+    }
+
+    return clientReadyPromise;
 }

@@ -12,6 +12,12 @@ export const nickHandler: IrcEventHandler = async (client, line) => {
     const user = client.getOrCreateUser(oldNick);
     user.nick = newNick;
 
+    // Sync nickname change
+    client.opts.onNick?.(oldNick, newNick);
+
+    // Trigger WHOIS to update realname
+    await client.whois(newNick);
+
     // Update all channels this user is in
     for (const channel of user.channels) {
         channel.removeUser(user); // Remove with oldNick reference

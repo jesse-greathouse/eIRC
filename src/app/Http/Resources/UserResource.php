@@ -16,6 +16,7 @@ class UserResource extends JsonResource
             'id' => $this->id,
             'realname' => $this->realname,
             'email' => $this->email,
+            'channels' => $this->channels ? explode(',', $this->channels) : [],
             'profile' => $this->whenLoaded('profile', function () {
                 return new ProfileResource($this->profile);
             }),

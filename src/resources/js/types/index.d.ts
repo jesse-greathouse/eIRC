@@ -47,6 +47,12 @@ export interface Avatar {
     updated_at: string;
 }
 
+export interface ShallowUser {
+    id: number;
+    nick: string;
+    realname: string;
+}
+
 export interface Profile {
     id: number;
     user_id: number;
@@ -62,6 +68,7 @@ export interface Profile {
     updated_at: string;
     selected_avatar_id: number | null;
     selected_avatar?: Avatar | null;
+    user?: ShallowUser;
 }
 
 export type BreadcrumbItemType = BreadcrumbItem;

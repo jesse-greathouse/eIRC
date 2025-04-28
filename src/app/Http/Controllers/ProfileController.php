@@ -2,67 +2,35 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\Request,
+    Inertia\Inertia;
+
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+
 use App\Models\Profile;
-use Illuminate\Http\Request;
+
 
 class ProfileController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function __invoke(Request $request, string $realname)
     {
-        //
-    }
+        if (!preg_match('/^[a-zA-Z0-9_\-]{3,50}$/', $realname)) {
+            throw new NotFoundHttpException('Invalid profile identifier.');
+        }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
+        $profile = Profile::with(['selectedAvatar', 'user'])
+            ->whereHas('user', function ($query) use ($realname) {
+                $query->where('realname', $realname);
+            })
+            ->first();
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
+        if (!$profile) {
+            throw new NotFoundHttpException('Profile not found.');
+        }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Profile $profile)
-    {
-        //
-    }
-
-    public function edit(Request $request)
-    {
-        $profile = $request->user()->profile ?? new Profile();
-        return view('profile.edit', compact('profile'));
-    }
-
-    public function update(Request $request)
-    {
-        $data = $request->validate([
-            'bio' => 'nullable|string|max:500',
-            'avatar' => 'nullable|image',
-            'timezone' => 'required|string',
+        return Inertia::render('Profile', [
+            'profile' => $profile,
+            'user' => $profile->user,
         ]);
-
-        $request->user()->profile()->updateOrCreate([], $data);
-
-        return back()->with('status', 'Profile updated!');
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Profile $profile)
-    {
-        //
     }
 }

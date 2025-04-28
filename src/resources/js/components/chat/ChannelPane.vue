@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import type { IrcLine } from '@/types/IrcLine';
+import type { IrcClient } from '@/irc/IrcClient';
 import { classifyLine, getUser, renderEventText } from './helpers';
 import { getIrcClient } from '@/composables/useIrcClient';
 import ChannelPaneHeader from './ChannelPaneHeader.vue';
@@ -17,17 +18,23 @@ const props = defineProps<{
     tabId: string;
 }>();
 
-const client = getIrcClient();
+// IRC Client must be ref + awaited
+const client = ref<IrcClient | null>(null);
+
+onMounted(async () => {
+    client.value = await getIrcClient();
+});
 
 const channel = computed(() => {
+    if (!client.value) return null;
     const channelName = props.tabId.replace(/^channel-/, '');
-    return client?.channels.get(channelName);
+    return client.value.channels.get(channelName) ?? null;
 });
 
 const userVersion = ref('');
 
 const channelUsers = computed(() => {
-    void userVersion.value;  // Dependency for reactivity
+    void userVersion.value; // Dependency for reactivity
     return channel.value?.users ?? [];
 });
 </script>
@@ -64,7 +71,8 @@ const channelUsers = computed(() => {
                         <div class="flow-root">
                             <ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
                                 <li v-for="user in channelUsers" :key="user.nick">
-                                    <ChannelUserListCard :user="user" />
+                                    <ChannelUserListCard :user="user" :tab-id="tabId"
+                                        @switch-tab="emit('switch-tab', $event)" />
                                 </li>
                             </ul>
                         </div>

@@ -22,6 +22,13 @@ export const whoisHandler: IrcEventHandler = async (client, line) => {
                 host,
                 realName,
             });
+
+            // Sync the top-level User realName with WHOIS realName
+            if (realName) {
+                user.realName = realName;
+                client.opts.onWhois?.(nick, realName);
+            }
+
             break;
         }
         case '312': { // WHOIS server
