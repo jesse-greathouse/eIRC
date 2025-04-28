@@ -45,8 +45,6 @@ function toggleFavorite(channel: string) {
     } else {
         favorites.value.push(cleanedChannel);
     }
-
-    console.log('[Favorites] Toggled:', favorites.value);
 }
 
 // Watch and persist favorites to the server
@@ -54,13 +52,10 @@ watch(favorites, async (newFavorites) => {
     const validFavorites = newFavorites.filter(ch => typeof ch === 'string' && ch.trim() !== '');
     const uniqueFavorites = Array.from(new Set(validFavorites));
 
-    console.log('[Favorites] Unique Valid:', uniqueFavorites);
-
     try {
         await coreApi.updateUser(props.user.realname, {
             channels: uniqueFavorites,  // Send as array
         });
-        console.log('[Favorites] Saved:', uniqueFavorites);
     } catch (err) {
         console.error('[Favorites] Save failed:', err);
     }
