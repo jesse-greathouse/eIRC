@@ -16,9 +16,11 @@ const emit = defineEmits<{
         <h2 class="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
             Channels
         </h2>
-        <button v-for="tab in props.tabs" :key="tab.id" @click="emit('update-tab', tab.id)"
+        <button
+            v-for="tab in props.tabs" :key="tab.id"
             class="block w-full text-left px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-            :class="{ 'bg-gray-300 dark:bg-gray-700 font-semibold': tab.id === props.activeTab }">
+            :class="{ 'bg-gray-300 dark:bg-gray-700 font-semibold': tab.id === props.activeTab }"
+            @click="emit('update-tab', tab.id)">
 
             <!-- Slot support for tab customization -->
             <slot name="tab" :tab="tab">

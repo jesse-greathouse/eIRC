@@ -1,5 +1,6 @@
 import { IrcLine } from '@/types/IrcLine';
 import { User } from './models/User';
+import { Whois } from './models/Whois';
 import { Channel } from './models/Channel';
 import type { IrcEventHandler, IrcClientOptions } from './types';
 import { parseIrcLine } from '@/lib/parseIrcLine';
@@ -165,10 +166,10 @@ export class IrcClient {
         return this.users.get(nick) ?? null;
     }
 
-    getOrCreateUser(nick: string): User {
+    getOrCreateUser(nick: string, whois?: Whois): User {
         let user = this.users.get(nick);
         if (!user) {
-            user = new User(nick);
+            user = new User(nick, whois);
             this.users.set(nick, user);
         }
 

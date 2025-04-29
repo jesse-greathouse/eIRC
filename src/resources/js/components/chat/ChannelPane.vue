@@ -71,7 +71,9 @@ const channelUsers = computed(() => {
                         <div class="flow-root">
                             <ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
                                 <li v-for="user in channelUsers" :key="user.nick">
-                                    <ChannelUserListCard :user="user" :tab-id="tabId"
+                                    <ChannelUserListCard
+                                        :user="client?.users.get(user.nick) ?? user"
+                                        :tab-id="props.tabId"
                                         @switch-tab="emit('switch-tab', $event)" />
                                 </li>
                             </ul>
@@ -82,7 +84,7 @@ const channelUsers = computed(() => {
         </template>
 
         <template #input>
-            <ChatInput :tabId="props.tabId" @switch-tab="emit('switch-tab', $event)" />
+            <ChatInput :tab-id="props.tabId" @switch-tab="emit('switch-tab', $event)" />
         </template>
     </BaseChatPane>
 </template>

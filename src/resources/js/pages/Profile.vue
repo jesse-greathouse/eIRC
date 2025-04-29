@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { onMounted, computed, ref } from 'vue';
 import { Head } from '@inertiajs/vue3';
-import AppLayout from '@/layouts/AppLayout.vue';
+
 import { type BreadcrumbItem, type Profile } from '@/types';
-import { getIrcClient } from '@/composables/useIrcClient'; // assuming this gets your IRC client instance
 import type { User as IrcUser } from '@/irc/models/User';
+
+import { getIrcClient } from '@/composables/useIrcClient';
+
+import AppLayout from '@/layouts/AppLayout.vue';
 
 interface Props {
     profile: Profile;
@@ -12,6 +15,7 @@ interface Props {
 
 const props = defineProps<Props>();
 
+// Breadcrumbs
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Profile', href: `/profile/${props.profile.user?.realname}` },
 ];
@@ -20,6 +24,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 const client = ref<Awaited<ReturnType<typeof getIrcClient>> | null>(null);
 const ircUser = ref<IrcUser | null>(null);;
 
+// Soocial links
 const hasSocialLinks = computed(() => {
     const links = [
         props.profile.x_link,
@@ -82,7 +87,8 @@ function monitorWhois(nick: string) {
 
             <!-- Avatar and Basic Info -->
             <div class="flex items-center space-x-4">
-                <img v-if="props.profile.selected_avatar?.base64_data" :src="props.profile.selected_avatar.base64_data"
+                <img
+                    v-if="props.profile.selected_avatar?.base64_data" :src="props.profile.selected_avatar.base64_data"
                     alt="Avatar" class="w-24 h-24 rounded-full border" />
                 <div>
                     <p><strong>Nickname:</strong> {{ ircUser?.nick }}</p>
@@ -95,15 +101,23 @@ function monitorWhois(nick: string) {
                 <h2 class="text-xl font-semibold mt-6">Social Links</h2>
                 <ul class="list-disc list-inside text-blue-500">
                     <li v-if="props.profile.x_link"><a :href="props.profile.x_link" target="_blank">Twitter/X</a></li>
-                    <li v-if="props.profile.instagram_link"><a :href="props.profile.instagram_link"
+                    <li v-if="props.profile.instagram_link">
+                        <a
+                            :href="props.profile.instagram_link"
                             target="_blank">Instagram</a></li>
                     <li v-if="props.profile.tiktok_link"><a :href="props.profile.tiktok_link" target="_blank">TikTok</a>
                     </li>
-                    <li v-if="props.profile.youtube_link"><a :href="props.profile.youtube_link"
+                    <li v-if="props.profile.youtube_link">
+                        <a
+                            :href="props.profile.youtube_link"
                             target="_blank">YouTube</a></li>
-                    <li v-if="props.profile.facebook_link"><a :href="props.profile.facebook_link"
+                    <li v-if="props.profile.facebook_link">
+                        <a
+                            :href="props.profile.facebook_link"
                             target="_blank">Facebook</a></li>
-                    <li v-if="props.profile.pinterest_link"><a :href="props.profile.pinterest_link"
+                    <li v-if="props.profile.pinterest_link">
+                        <a
+                            :href="props.profile.pinterest_link"
                             target="_blank">Pinterest</a></li>
                 </ul>
             </div>

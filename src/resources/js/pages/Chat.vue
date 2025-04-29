@@ -13,23 +13,58 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import ContextMenu from '@/components/nav/ChatContextMenu.vue';
 import ConsolePane from '@/components/chat/ConsolePane.vue';
 
-const props = defineProps<{ user: User }>();
+interface Props {
+    user: User;
+}
 
-const { coreApi } = useClient('core');
-
-// Track favorites as bare channel names (no #)
-const favorites = ref<string[]>(props.user.channels.split(','));
+const props = defineProps<Props>();
 
 // Breadcrumbs
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Chat', href: '/chat' },
 ];
 
+const { coreApi } = useClient('core');
+
+// Track favorites as bare channel names (no # handle)
+const favorites = ref<string[]>(props.user.channels.split(','));
+
 // Tab management
 const activeTab = ref('console');
 const { chatTabs, tabTargets, addChannelTab, addPrivmsgTab } = useChatTabs();
 const currentTab = computed(() => chatTabs.value.find(t => t.id === activeTab.value));
 const currentPane = computed(() => currentTab.value?.component ?? ConsolePane);
+
+// Message buffer
+const { lines } = useIrcLines();
+
+onMounted(() => {
+    emitter.on('joined-channel', addChannelTab);
+    emitter.on('new-privmsg', addPrivmsgTab);
+    emitter.on('switch-tab', switchTab);
+    document.body.classList.add('overflow-hidden');
+});
+
+onBeforeUnmount(() => {
+    emitter.off('joined-channel', addChannelTab);
+    emitter.off('new-privmsg', addPrivmsgTab);
+    emitter.off('switch-tab', switchTab);
+    document.body.classList.remove('overflow-hidden');
+});
+
+// Watch and persist favorites to the server
+watch(favorites, async (newFavorites) => {
+    const validFavorites = newFavorites.filter(ch => typeof ch === 'string' && ch.trim() !== '');
+    const uniqueFavorites = Array.from(new Set(validFavorites));
+
+    try {
+        await coreApi.updateUser(props.user.realname, {
+            channels: uniqueFavorites,  // Send as array
+        });
+    } catch (err) {
+        console.error('[Favorites] Save failed:', err);
+    }
+}, { deep: true });
 
 function normalizeChannel(channel: string): string {
     return channel.replace(/^#/, '').trim().toLowerCase();
@@ -46,20 +81,6 @@ function toggleFavorite(channel: string) {
         favorites.value.push(cleanedChannel);
     }
 }
-
-// Watch and persist favorites to the server
-watch(favorites, async (newFavorites) => {
-    const validFavorites = newFavorites.filter(ch => typeof ch === 'string' && ch.trim() !== '');
-    const uniqueFavorites = Array.from(new Set(validFavorites));
-
-    try {
-        await coreApi.updateUser(props.user.realname, {
-            channels: uniqueFavorites,  // Send as array
-        });
-    } catch (err) {
-        console.error('[Favorites] Save failed:', err);
-    }
-}, { deep: true });
 
 function switchTab(tabId: string) {
     if (!chatTabs.value.find(t => t.id === tabId)) {
@@ -79,23 +100,6 @@ function switchTab(tabId: string) {
         }
     });
 }
-
-// IRC Client and Message buffer dispatch
-const { lines } = useIrcLines();
-
-onMounted(() => {
-    emitter.on('joined-channel', addChannelTab);
-    emitter.on('new-privmsg', addPrivmsgTab);
-    emitter.on('switch-tab', switchTab);
-    document.body.classList.add('overflow-hidden');
-});
-
-onBeforeUnmount(() => {
-    emitter.off('joined-channel', addChannelTab);
-    emitter.off('new-privmsg', addPrivmsgTab);
-    emitter.off('switch-tab', switchTab);
-    document.body.classList.remove('overflow-hidden');
-});
 </script>
 
 <template>
@@ -107,24 +111,29 @@ onBeforeUnmount(() => {
             <!-- Sidebar -->
             <aside
                 class="flex flex-col h-full w-64 shrink-0 rounded-xl border border-sidebar-border/70 dark:border-sidebar-border bg-white dark:bg-gray-800 overflow-hidden">
-                <ContextMenu :tabs="chatTabs" :activeTab="activeTab" @update-tab="switchTab">
+                <ContextMenu :tabs="chatTabs" :active-tab="activeTab" @update-tab="switchTab">
                     <!-- Slot to render tabs with star buttons -->
                     <template #tab="{ tab }">
                         <div class="flex justify-between items-center w-full">
                             <span>{{ tab.label }}</span>
-                            <button v-if="tab.id.startsWith('channel-')"
+                            <button
+                                v-if="tab.id.startsWith('channel-')"
                                 @click.stop="toggleFavorite(tab.id.replace(/^channel-/, ''))">
                                 <!-- Filled Star if Favorite -->
-                                <svg v-if="favorites.includes(normalizeChannel(tab.id.replace(/^channel-/, '')))"
+                                <svg
+                                    v-if="favorites.includes(normalizeChannel(tab.id.replace(/^channel-/, '')))"
                                     xmlns="http://www.w3.org/2000/svg" fill="yellow" viewBox="0 0 24 24"
                                     stroke="currentColor" class="w-4 h-4">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    <path
+                                        stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.36 4.192a1 1 0 00.95.69h4.404c.969 0 1.371 1.24.588 1.81l-3.57 2.593a1 1 0 00-.364 1.118l1.36 4.192c.3.921-.755 1.688-1.538 1.118L12 15.347l-3.57 2.593c-.783.57-1.838-.197-1.538-1.118l1.36-4.192a1 1 0 00-.364-1.118L4.318 9.619c-.783-.57-.38-1.81.588-1.81h4.404a1 1 0 00.95-.69l1.36-4.192z" />
                                 </svg>
                                 <!-- Empty Star if Not Favorite -->
-                                <svg v-else xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                <svg
+                                    v-else xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                     stroke="currentColor" class="w-4 h-4">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    <path
+                                        stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.36 4.192a1 1 0 00.95.69h4.404c.969 0 1.371 1.24.588 1.81l-3.57 2.593a1 1 0 00-.364 1.118l1.36 4.192c.3.921-.755 1.688-1.538 1.118L12 15.347l-3.57 2.593c-.783.57-1.838-.197-1.538-1.118l1.36-4.192a1 1 0 00-.364-1.118L4.318 9.619c-.783-.57-.38-1.81.588-1.81h4.404a1 1 0 00.95-.69l1.36-4.192z" />
                                 </svg>
                             </button>

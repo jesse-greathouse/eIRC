@@ -9,7 +9,8 @@ export class Whois {
     signOnTime: number | null = null;
     channels: string[] | null = null;
     isOperator: boolean | null = null;
-    away: string | null = null;
+    away: boolean = false;
+    awayMessage: string | null = null;
 
     constructor(nick: string, init?: Partial<Whois>) {
         this.nick = nick;
@@ -29,6 +30,7 @@ export class Whois {
             channels: this.channels,
             isOperator: this.isOperator,
             away: this.away,
+            awayMessage: this.awayMessage,
         };
     }
 

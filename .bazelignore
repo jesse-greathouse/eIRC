@@ -1,1 +1,7 @@
 .git
+.dist
+.vscode
+var
+tmp
+opt
+etc

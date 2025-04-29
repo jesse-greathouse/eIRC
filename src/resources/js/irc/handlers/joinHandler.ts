@@ -9,6 +9,9 @@ export const joinHandler: IrcEventHandler = async (client, line) => {
     const channelName = line.params[0];
     if (!channelName || !userNick) return;
 
+    // Refresh WHOIS for userNick.
+    await client.whois(userNick);
+
     client.addUserToChannel(userNick, channelName);
 
     const isSelf = userNick === client.nick;

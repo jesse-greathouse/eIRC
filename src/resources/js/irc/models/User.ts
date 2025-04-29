@@ -1,3 +1,4 @@
+import { reactive } from 'vue';
 import type { Channel } from './Channel';
 import { Whois } from './Whois';
 
@@ -8,12 +9,11 @@ export class User {
     modes: Set<string>;
     whois: Whois;
 
-    constructor(nick: string, realName?: string) {
+    constructor(nick: string, whois?: Whois) {
         this.nick = nick;
-        this.realName = realName;
         this.channels = new Set<Channel>();
         this.modes = new Set<string>();
-        this.whois = new Whois(nick);
+        this.whois = whois ?? reactive(new Whois(nick));
     }
 
     addChannel(channel: Channel) {

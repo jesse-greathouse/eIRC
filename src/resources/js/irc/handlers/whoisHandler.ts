@@ -1,4 +1,4 @@
-import { nextTick } from 'vue';
+import { nextTick, reactive } from 'vue';
 import type { IrcEventHandler } from '../types';
 import { Whois } from '../models/Whois';
 
@@ -6,11 +6,8 @@ export const whoisHandler: IrcEventHandler = async (client, line) => {
     await nextTick();
     const code = line.command; // e.g., '311', '312', '317', '319', '318'
     const nick = line.params[1];
-    const user = client.getOrCreateUser(nick);
-
-    if (!user.whois) {
-        user.whois = new Whois(nick);
-    }
+    const whois = reactive(new Whois(nick));
+    const user = client.getOrCreateUser(nick, whois);
 
     switch (code) {
         case '311': { // WHOIS user (strictly per IRC spec)
@@ -21,6 +18,8 @@ export const whoisHandler: IrcEventHandler = async (client, line) => {
                 user: username,
                 host,
                 realName,
+                away: false,
+                awayMessage: '',
             });
 
             // Sync the top-level User realName with WHOIS realName
@@ -79,7 +78,8 @@ export const whoisHandler: IrcEventHandler = async (client, line) => {
         }
         case '301': { // WHOIS away
             const [, , awayMessage] = line.params;
-            user.whois.away = awayMessage ?? null;
+            user.whois.away = true;
+            user.whois.awayMessage = awayMessage ?? null;
             break;
         }
         case '318': { // WHOIS end
