@@ -1,19 +1,24 @@
 <script setup lang="ts">
-import { onMounted, computed, ref } from 'vue';
+import { onMounted, onBeforeUnmount, ref } from 'vue';
 import { Head } from '@inertiajs/vue3';
 
 import { type BreadcrumbItem, type Profile } from '@/types';
 import type { User as IrcUser } from '@/irc/models/User';
-
-import { getIrcClient } from '@/composables/useIrcClient';
+import type { Channel } from '@/irc/models/Channel';
 
 import AppLayout from '@/layouts/AppLayout.vue';
+import ProfileContextMenu from '@/components/nav/ProfileContextMenu.vue';
+import ProfilePane from '@/components/profile/ProfilePane.vue';
+import { getIrcClient } from '@/composables/useIrcClient';
 
 interface Props {
     profile: Profile;
 }
 
 const props = defineProps<Props>();
+
+// WhoisInterval for polling User Whois in chat.
+let whoisInterval: ReturnType<typeof setInterval> | null = null;
 
 // Breadcrumbs
 const breadcrumbs: BreadcrumbItem[] = [
@@ -22,105 +27,84 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 // Client and ircUser computed binding
 const client = ref<Awaited<ReturnType<typeof getIrcClient>> | null>(null);
-const ircUser = ref<IrcUser | null>(null);;
-
-// Soocial links
-const hasSocialLinks = computed(() => {
-    const links = [
-        props.profile.x_link,
-        props.profile.instagram_link,
-        props.profile.tiktok_link,
-        props.profile.youtube_link,
-        props.profile.facebook_link,
-        props.profile.pinterest_link,
-    ];
-    return links.some(link => !!link);
-});
+const ircUser = ref<IrcUser | null>(null);
+const channels = ref<Channel[]>([]);
 
 onMounted(async () => {
+    const nick = props.profile.user?.nick ?? '';
     client.value = await getIrcClient();
-    monitorWhois(props.profile.user?.nick ?? '');
+    ircUser.value = client.value.getUser(nick);
+    channels.value = ircUser.value ? Array.from(ircUser.value.channels) : [];
+    monitorWhois(nick);
 });
 
-/**
- * Polls the IRC client for the user and triggers WHOIS if needed.
- * Stops after maxAttempts or when the user is found.
- */
-function monitorWhois(nick: string) {
-    let attempts = 0;
-    const maxAttempts = 10;
+onBeforeUnmount(() => {
+    if (whoisInterval) {
+        clearInterval(whoisInterval);
+        whoisInterval = null;
+    }
+});
 
-    const interval = setInterval(() => {
-        const foundUser = client.value?.getUser(nick) ?? null;
+// This will eventually handle clicked channel buttons
+function switchTab(tabId: string) {
+    console.log('Switch to channel:', tabId);
+}
 
-        if (foundUser) {
-            ircUser.value = foundUser;
+async function monitorWhois(nick: string) {
+    async function waitUntilReady() {
+        const maxAttempts = 100; // 10s max
+        let attempts = 0;
 
-            if (!foundUser.whois.realName) {
-                client.value?.whois(foundUser.nick);
-            }
-
-            clearInterval(interval);
-        } else {
+        while ((!client.value || !client.value.isReady()) && attempts < maxAttempts) {
+            await new Promise((resolve) => setTimeout(resolve, 100));
             attempts++;
-
-            if (attempts >= maxAttempts) {
-                console.warn(`[ABORT] Stopped waiting on whois after ${maxAttempts} attempts.`);
-                clearInterval(interval);
-            }
         }
-    }, 500);
+
+        if (!client.value || !client.value.isReady()) {
+            console.warn('[WARN] Client not ready after waiting.');
+            return false;
+        }
+
+        return true;
+    }
+
+    async function doWhoisRefresh() {
+        const ready = await waitUntilReady();
+        if (!ready) return;
+
+        client.value!.whois(nick);
+
+        setTimeout(() => {
+            if (!client.value || !client.value.isReady()) return;
+
+            ircUser.value = client.value.getUser(nick) ?? null;
+            channels.value = ircUser.value ? Array.from(ircUser.value.channels) : [];
+
+        }, 500);
+    }
+
+    // Start initial WHOIS immediately
+    await doWhoisRefresh();
+
+    // Repeat every 30 seconds
+    whoisInterval = setInterval(doWhoisRefresh, 30000);
 }
 </script>
 
 <template>
+
+    <Head :title="`${ircUser?.nick}'s Profile`" />
+
     <AppLayout :breadcrumbs="breadcrumbs">
+        <div class="flex flex-1 min-h-0 overflow-hidden w-full gap-4">
+            <!-- Sidebar -->
+            <aside
+                class="flex flex-col h-full w-64 shrink-0 rounded-xl border border-sidebar-border/70 dark:border-sidebar-border bg-white dark:bg-gray-800 overflow-hidden">
+                <ProfileContextMenu :channels="channels" @switch-tab="switchTab" />
+            </aside>
 
-        <Head :title="`${ircUser?.nick}'s Profile`" />
-
-        <div class="flex flex-col space-y-10 p-4">
-            <!-- User Name and Bio -->
-            <div>
-                <h1 class="text-2xl font-bold">{{ ircUser?.nick }}</h1>
-                <p class="text-gray-600 dark:text-gray-400">{{ props.profile.bio }}</p>
-            </div>
-
-            <!-- Avatar and Basic Info -->
-            <div class="flex items-center space-x-4">
-                <img
-                    v-if="props.profile.selected_avatar?.base64_data" :src="props.profile.selected_avatar.base64_data"
-                    alt="Avatar" class="w-24 h-24 rounded-full border" />
-                <div>
-                    <p><strong>Nickname:</strong> {{ ircUser?.nick }}</p>
-                    <p><strong>Timezone:</strong> {{ props.profile.timezone }}</p>
-                </div>
-            </div>
-
-            <!-- Social Media Links -->
-            <div v-if="hasSocialLinks">
-                <h2 class="text-xl font-semibold mt-6">Social Links</h2>
-                <ul class="list-disc list-inside text-blue-500">
-                    <li v-if="props.profile.x_link"><a :href="props.profile.x_link" target="_blank">Twitter/X</a></li>
-                    <li v-if="props.profile.instagram_link">
-                        <a
-                            :href="props.profile.instagram_link"
-                            target="_blank">Instagram</a></li>
-                    <li v-if="props.profile.tiktok_link"><a :href="props.profile.tiktok_link" target="_blank">TikTok</a>
-                    </li>
-                    <li v-if="props.profile.youtube_link">
-                        <a
-                            :href="props.profile.youtube_link"
-                            target="_blank">YouTube</a></li>
-                    <li v-if="props.profile.facebook_link">
-                        <a
-                            :href="props.profile.facebook_link"
-                            target="_blank">Facebook</a></li>
-                    <li v-if="props.profile.pinterest_link">
-                        <a
-                            :href="props.profile.pinterest_link"
-                            target="_blank">Pinterest</a></li>
-                </ul>
-            </div>
+            <!-- Main Profile Pane -->
+            <ProfilePane :irc-user="ircUser" :profile="props.profile" />
         </div>
     </AppLayout>
 </template>

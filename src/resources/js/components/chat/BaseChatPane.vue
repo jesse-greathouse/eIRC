@@ -33,8 +33,8 @@ defineExpose({ tabLines, scrollContainer });
         </div>
 
         <!-- Scrollable message buffer -->
-        <div class="flex-1 min-h-0 overflow-y-auto px-4 space-y-1" ref="scrollContainer">
-            <slot :tabLines="tabLines" />
+        <div ref="scrollContainer" class="flex-1 min-h-0 overflow-y-auto px-4 space-y-1">
+            <slot :tab-lines="tabLines" />
         </div>
 
         <!-- Docked input -->
