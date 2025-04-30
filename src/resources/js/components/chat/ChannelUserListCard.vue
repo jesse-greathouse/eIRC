@@ -24,6 +24,7 @@ const client = ref<IrcClient | null>(null);
 const ircUser = ref<IrcUser>(props.user);
 const profile = ref<Profile | null>(null);
 const whois = ref<Whois | null>(null);
+const popoverRef = ref<HTMLElement | null>(null);
 
 // User Context Popover
 const popoverVisible = ref(false);
@@ -113,36 +114,46 @@ function handleLeftClick() {
 let fadeOutTimer: ReturnType<typeof setTimeout> | null = null;
 
 // Right-click to toggle popover and position it with top-right corner at cursor
-function handleRightClick(event: MouseEvent) {
+async function handleRightClick(event: MouseEvent) {
     event.preventDefault();
-    emitter.emit('close-all-popovers'); // Close others
+    emitter.emit('close-all-popovers');
 
-    const popoverWidth = 288; // Tailwind w-72 = 72 * 4px
-    const padding = 20; // More generous space from screen edge
+    const popoverWidth = 288;
+    const padding = 10;
+    const offsetX = 4;
+    const offsetY = 8;
 
-    let left = event.clientX - popoverWidth;
+    let left = event.clientX + offsetX;
+    let top = event.clientY + offsetY;
 
-    // Calculate where the right edge would land
-    const estimatedRight = left + popoverWidth;
-
-    // If the popover would go beyond screen width minus padding
-    if (estimatedRight > window.innerWidth - padding) {
-        const overflow = estimatedRight - (window.innerWidth - padding);
-        left -= overflow;
+    // Clamp right
+    if (left + popoverWidth > window.innerWidth - padding) {
+        left = window.innerWidth - popoverWidth - padding;
+    }
+    if (left < padding) {
+        left = padding;
     }
 
-    // Clamp so the popover doesn't go off the left side either
-    left = Math.max(padding, left);
-
-    popoverPosition.value = {
-        top: event.clientY,
-        left,
-    };
-
+    popoverPosition.value = { top, left };
     popoverVisible.value = true;
-    if (fadeOutTimer) clearTimeout(fadeOutTimer);
-}
 
+    if (fadeOutTimer) clearTimeout(fadeOutTimer);
+
+    await nextTick();
+
+    // Now we can safely measure actual height
+    const popoverEl = popoverRef.value;
+    if (popoverEl) {
+        const rect = popoverEl.getBoundingClientRect();
+        const actualHeight = rect.height;
+
+        if (top + actualHeight > window.innerHeight - padding) {
+            top = window.innerHeight - actualHeight - padding;
+            if (top < padding) top = padding;
+            popoverPosition.value.top = top;
+        }
+    }
+}
 
 // Handle fade out after leaving popover
 function onPopoverMouseLeave() {
@@ -220,7 +231,7 @@ function normalizeAwayMessage(message: string | null | undefined): string {
             <transition name="fade">
                 <div v-if="popoverVisible" class="popover-wrapper">
                     <div
-                        :id="popoverId"
+                        :id="popoverId" ref="popoverRef"
                         class="fixed z-50 inline-block text-sm text-gray-500 bg-white border border-gray-200 rounded-lg shadow-md p-3 dark:text-gray-400 dark:border-gray-600 dark:bg-gray-800"
                         :style="{ top: popoverPosition.top + 'px', left: popoverPosition.left + 'px' }"
                         @mouseenter="onPopoverMouseEnter" @mouseleave="onPopoverMouseLeave">
