@@ -31,7 +31,7 @@ function startDownload() {
 
 <template>
     <div
-        class="w-full text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+        class="w-lg text-sm text-gray-900 bg-white border border-gray-200 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white">
         <!-- Header Info -->
         <div class="px-4 py-2 border-b border-gray-200 dark:border-gray-600">
             <h3 class="font-semibold text-sm truncate">{{ whois.realName || whois.nick }}</h3>
@@ -68,11 +68,11 @@ function startDownload() {
 
         <div class="px-4 py-2 border-b border-gray-200 dark:border-gray-600">
             <div class="w-full max-w-[400px]">
-                <p
+                <div
                     v-if="profile?.bio"
-                    class="text-xs text-gray-400 dark:text-gray-300 w-full h-full overflow-hidden text-ellipsis break-words p-2"
+                    class="max-w-full text-xs break-words p-1"
                     v-html="profile.bio">
-                </p>
+                </div>
             </div>
         </div>
     </div>

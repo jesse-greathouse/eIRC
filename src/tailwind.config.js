@@ -13,7 +13,14 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                sans: ['Instrument Sans', ...defaultTheme.fontFamily.sans],
+                // Used by Tailwind's `font-sans`
+                sans: [
+                    'Roboto',
+                    'Instrument Sans',
+                    ...defaultTheme.fontFamily.sans,
+                ],
+                // Available for manual use via `font-poppins`
+                poppins: ['Poppins', ...defaultTheme.fontFamily.sans],
             },
             borderRadius: {
                 lg: 'var(--radius)',
@@ -75,7 +82,45 @@ export default {
         },
     },
     plugins: [
+        require('@tailwindcss/typography'),
         require('tailwindcss-animate'),
         require('flowbite/plugin'),
+    ],
+    safelist: [
+        { pattern: /max-h-./ },
+        { pattern: /max-w-./ },
+        { pattern: /space-./ },
+        { pattern: /m-./ },
+        { pattern: /mt-./ },
+        { pattern: /me-./ },
+        { pattern: /mr-./ },
+        { pattern: /ml-./ },
+        { pattern: /mb-./ },
+        { pattern: /p-./ },
+        { pattern: /px-./ },
+        { pattern: /py-./ },
+        { pattern: /pl-./ },
+        { pattern: /pr-./ },
+        { pattern: /font-./ },
+        { pattern: /text-./ },
+        { pattern: /bg-./ },
+        { pattern: /from-./ },
+        { pattern: /to-./ },
+        { pattern: /shadow-./ },
+        { pattern: /transition-./ },
+        { pattern: /duration-./ },
+        { pattern: /ease-./ },
+        { pattern: /scale-./ },
+        { pattern: /rounded-./ },
+        //{ pattern: /-./ },
+
+        // Layout
+        'overflow-hidden', 'list-decimal',
+        // Fonts
+        'font-size', 'text-xs', 'text-base', 'text-xl', 'font-poppins', 'font-roboto', 'font-sans', 'leading-relaxed',
+        // Effects
+        'tracking-tight',,
+        // Transition
+        'transition',
     ],
 };

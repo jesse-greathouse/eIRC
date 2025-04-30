@@ -49,7 +49,7 @@ const channelUsers = computed(() => {
         <template #default="{ tabLines }">
             <div class="flex w-full h-full gap-4">
                 <!-- Chat Buffer -->
-                <ul class="flex-1 text-sm text-gray-700 dark:text-gray-300 space-y-1 pt-4">
+                <ul class="flex-1 text-gray-700 dark:text-gray-300 space-y-1 pt-4">
                     <li v-for="(line, index) in tabLines" :key="line.id ?? index">
                         <template v-if="classifyLine(line, 'channel') === 'message'">
                             <span class="font-medium text-indigo-500">{{ getUser(line) }}</span>:
@@ -65,7 +65,7 @@ const channelUsers = computed(() => {
                 </ul>
 
                 <!-- User List -->
-                <div class="w-[250px] border-l border-gray-300 dark:border-gray-700 pl-4 py-4">
+                <div class="w-sm border-l border-gray-300 dark:border-gray-700 pl-4 py-4">
                     <div
                         class="w-full p-4 bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700">
                         <div class="flow-root">

@@ -22,7 +22,7 @@ const props = defineProps<{
         </template>
 
         <template #default="{ tabLines }">
-            <ul class="text-[14px] font-mono text-gray-600 space-y-1">
+            <ul class="font-mono text-gray-600 space-y-1">
                 <li v-for="(line, index) in tabLines" :key="line.id ?? index">
                     <span v-if="line.command === 'NOTICE'" class="font-semibold text-green-600">
                         {{ line.params[1] ?? line.raw }}

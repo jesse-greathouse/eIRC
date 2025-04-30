@@ -118,7 +118,7 @@ async function handleRightClick(event: MouseEvent) {
     event.preventDefault();
     emitter.emit('close-all-popovers');
 
-    const popoverWidth = 288;
+    const popoverWidth = 512; // Tailwind w-lg
     const padding = 10;
     const offsetX = 4;
     const offsetY = 8;

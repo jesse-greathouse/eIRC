@@ -24,7 +24,7 @@ const props = defineProps<{
         </template>
 
         <template #default="{ tabLines }">
-            <ul class="text-sm text-gray-700 dark:text-gray-300 space-y-1">
+            <ul class="text-gray-700 dark:text-gray-300 space-y-1">
                 <li v-for="(line, index) in tabLines" :key="line.id ?? index">
                     <template v-if="classifyLine(line, 'privmsg') === 'message'">
                         <span class="font-medium text-indigo-500">{{ getUser(line) }}</span>:

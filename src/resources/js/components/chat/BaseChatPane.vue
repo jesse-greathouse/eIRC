@@ -32,8 +32,8 @@ defineExpose({ tabLines, scrollContainer });
             <slot name="header" />
         </div>
 
-        <!-- Scrollable message buffer -->
-        <div ref="scrollContainer" class="flex-1 min-h-0 overflow-y-auto px-4 space-y-1">
+        <!-- Scrollable message buffer (chat lines only) -->
+        <div ref="scrollContainer" class="flex-1 min-h-0 overflow-y-auto px-4 space-y-1 text-xl">
             <slot :tab-lines="tabLines" />
         </div>
 
