@@ -5,6 +5,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { TextArea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import InputError from '@/components/InputError.vue';
 import HeadingSmall from '@/components/HeadingSmall.vue';
@@ -86,7 +87,7 @@ const avatarUrl = computed(() => {
             <div class="flex flex-col space-y-10">
                 <HeadingSmall title="Profile Settings" description="Manage your profile appearance and social links" />
 
-                <form @submit.prevent="submitProfile" class="space-y-6" enctype="multipart/form-data">
+                <form class="space-y-6" enctype="multipart/form-data" @submit.prevent="submitProfile">
                     <Card>
                         <CardHeader>
                             <CardTitle>Profile Details</CardTitle>
@@ -113,9 +114,11 @@ const avatarUrl = computed(() => {
                                     <Input id="timezone" v-model="formProfile.timezone" />
                                     <InputError class="mt-2" :message="formProfile.errors.timezone" />
                                 </div>
-                                <div>
+                                <div class="md:col-span-2">
                                     <Label for="bio">Bio</Label>
-                                    <Input id="bio" v-model="formProfile.bio" />
+                                    <TextArea
+                                        id="bio" v-model="formProfile.bio"
+                                        placeholder="Tell us a little about yourself..." class="h-32 resize-none" />
                                     <InputError class="mt-2" :message="formProfile.errors.bio" />
                                 </div>
                             </div>

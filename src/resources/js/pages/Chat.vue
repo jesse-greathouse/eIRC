@@ -115,26 +115,32 @@ function switchTab(tabId: string) {
                     <!-- Slot to render tabs with star buttons -->
                     <template #tab="{ tab }">
                         <div class="flex justify-between items-center w-full">
-                            <span>{{ tab.label }}</span>
+                            <span class="truncate">{{ tab.label }}</span>
                             <button
-                                v-if="tab.id.startsWith('channel-')"
+                                v-if="tab.id.startsWith('channel-')" class="ml-2"
                                 @click.stop="toggleFavorite(tab.id.replace(/^channel-/, ''))">
                                 <!-- Filled Star if Favorite -->
                                 <svg
                                     v-if="favorites.includes(normalizeChannel(tab.id.replace(/^channel-/, '')))"
-                                    xmlns="http://www.w3.org/2000/svg" fill="yellow" viewBox="0 0 24 24"
-                                    stroke="currentColor" class="w-4 h-4">
+                                    xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5"
+                                    stroke="#f59e0b" stroke-width="1">
+                                    <defs>
+                                        <linearGradient id="starGradient" x1="0%" y1="100%" x2="0%" y2="0%">
+                                            <stop offset="0%" stop-color="#f59e0b" />
+                                            <stop offset="100%" stop-color="#fef08a" />
+                                        </linearGradient>
+                                    </defs>
                                     <path
-                                        stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.36 4.192a1 1 0 00.95.69h4.404c.969 0 1.371 1.24.588 1.81l-3.57 2.593a1 1 0 00-.364 1.118l1.36 4.192c.3.921-.755 1.688-1.538 1.118L12 15.347l-3.57 2.593c-.783.57-1.838-.197-1.538-1.118l1.36-4.192a1 1 0 00-.364-1.118L4.318 9.619c-.783-.57-.38-1.81.588-1.81h4.404a1 1 0 00.95-.69l1.36-4.192z" />
+                                        fill="url(#starGradient)"
+                                        d="M12 2l2.9 6.6 7.1.7-5 4.9 1.6 7.1L12 18.3 5.4 21.3 7 14.2 2 9.3l7.1-.7L12 2z" />
                                 </svg>
+
                                 <!-- Empty Star if Not Favorite -->
                                 <svg
-                                    v-else xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                    stroke="currentColor" class="w-4 h-4">
+                                    v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5"
+                                    fill="none" stroke="#f59e0b" stroke-width="1">
                                     <path
-                                        stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.36 4.192a1 1 0 00.95.69h4.404c.969 0 1.371 1.24.588 1.81l-3.57 2.593a1 1 0 00-.364 1.118l1.36 4.192c.3.921-.755 1.688-1.538 1.118L12 15.347l-3.57 2.593c-.783.57-1.838-.197-1.538-1.118l1.36-4.192a1 1 0 00-.364-1.118L4.318 9.619c-.783-.57-.38-1.81.588-1.81h4.404a1 1 0 00.95-.69l1.36-4.192z" />
+                                        d="M12 2l2.9 6.6 7.1.7-5 4.9 1.6 7.1L12 18.3 5.4 21.3 7 14.2 2 9.3l7.1-.7L12 2z" />
                                 </svg>
                             </button>
                         </div>

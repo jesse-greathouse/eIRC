@@ -115,17 +115,34 @@ let fadeOutTimer: ReturnType<typeof setTimeout> | null = null;
 // Right-click to toggle popover and position it with top-right corner at cursor
 function handleRightClick(event: MouseEvent) {
     event.preventDefault();
+    emitter.emit('close-all-popovers'); // Close others
 
-    emitter.emit('close-all-popovers'); // Close any other open popovers
+    const popoverWidth = 288; // Tailwind w-72 = 72 * 4px
+    const padding = 20; // More generous space from screen edge
 
-    const popoverWidth = 288; // Approx. width of w-72 (72 * 4 = 288px)
+    let left = event.clientX - popoverWidth;
+
+    // Calculate where the right edge would land
+    const estimatedRight = left + popoverWidth;
+
+    // If the popover would go beyond screen width minus padding
+    if (estimatedRight > window.innerWidth - padding) {
+        const overflow = estimatedRight - (window.innerWidth - padding);
+        left -= overflow;
+    }
+
+    // Clamp so the popover doesn't go off the left side either
+    left = Math.max(padding, left);
+
     popoverPosition.value = {
         top: event.clientY,
-        left: event.clientX - popoverWidth,
+        left,
     };
+
     popoverVisible.value = true;
     if (fadeOutTimer) clearTimeout(fadeOutTimer);
 }
+
 
 // Handle fade out after leaving popover
 function onPopoverMouseLeave() {
@@ -201,13 +218,12 @@ function normalizeAwayMessage(message: string | null | undefined): string {
         <!-- Popover rendered in body via teleport -->
         <Teleport to="body">
             <transition name="fade">
-                <div
-                    v-if="popoverVisible" :id="popoverId"
-                    class="fixed z-50 inline-block text-sm text-gray-500 bg-white border border-gray-200 rounded-lg shadow-md p-3 dark:text-gray-400 dark:border-gray-600 dark:bg-gray-800"
-                    :style="{ top: popoverPosition.top + 'px', left: popoverPosition.left + 'px' }"
-                    @mouseenter="onPopoverMouseEnter" @mouseleave="onPopoverMouseLeave">
-                    <!-- Force UserPopoverContent to fill the popover width -->
-                    <div class="w-full">
+                <div v-if="popoverVisible" class="popover-wrapper">
+                    <div
+                        :id="popoverId"
+                        class="fixed z-50 inline-block text-sm text-gray-500 bg-white border border-gray-200 rounded-lg shadow-md p-3 dark:text-gray-400 dark:border-gray-600 dark:bg-gray-800"
+                        :style="{ top: popoverPosition.top + 'px', left: popoverPosition.left + 'px' }"
+                        @mouseenter="onPopoverMouseEnter" @mouseleave="onPopoverMouseLeave">
                         <UserPopoverContent :whois="whois as Whois" :profile="profile" />
                     </div>
                 </div>
@@ -215,6 +231,7 @@ function normalizeAwayMessage(message: string | null | undefined): string {
         </Teleport>
     </div>
 </template>
+
 <style scoped>
 .fade-enter-active,
 .fade-leave-active {
