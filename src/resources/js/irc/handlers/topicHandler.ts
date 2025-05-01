@@ -24,4 +24,6 @@ export const topicHandler: IrcEventHandler = async (client, line) => {
     bufferLine.raw = `Topic for ${channelName} is "${topic}"`;
 
     client.opts.addUserLineTo?.(tabId, bufferLine);
+
+    client.opts.onTopic?.(topic, channelName);
 };

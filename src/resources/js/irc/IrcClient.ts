@@ -126,6 +126,19 @@ export class IrcClient {
         return this.input(`WHOIS ${target}`);
     }
 
+    async mode(user: string, mode: string, channel: string): Promise<void> {
+        return this.input(`MODE ${channel} ${mode} ${user}`);
+    }
+
+    async kick(channel: string, user: string, reason: string = 'Requested by operator'): Promise<void> {
+        return this.input(`KICK ${channel} ${user} :${reason}`);
+    }
+
+    async ban(channel: string, userHostmask: string): Promise<void> {
+        // Typically +b user!*@* is sufficient for nickname-based bans
+        return this.input(`MODE ${channel} +b ${userHostmask}`);
+    }
+
     disconnect() {
         if (this.socket) {
             this.socket.close();
@@ -218,6 +231,30 @@ export class IrcClient {
 
     isReady(): boolean {
         return this.ready;
+    }
+
+    isChannelOp(nick: string, channelName: string): boolean {
+        const channel = this.channels.get(channelName);
+        if (channel) {
+            const user = Array.from(channel.ops).find(user => user.nick === nick);
+            if (user) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    isChannelVoice(nick: string, channelName: string): boolean {
+        const channel = this.channels.get(channelName);
+        if (channel) {
+            const user = Array.from(channel.voice).find(user => user.nick === nick);
+            if (user) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     onReady(tasks: ((client: IrcClient) => void)[]): void {

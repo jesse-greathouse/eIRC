@@ -1,7 +1,7 @@
 import { ref } from 'vue';
+import emitter from '@/lib/emitter';
 import { IrcClient } from '@/irc/IrcClient';
 import { buildHandlers } from '@/irc/buildHandlers';
-import emitter from '@/lib/emitter';
 import { getTabKey } from '@/lib/getTabKey';
 import { useClient } from '@/composables/useClient';
 import { useIrcLines } from '@/composables/useIrcLines';
@@ -40,6 +40,9 @@ export function useIrcClient(chat_token: string) {
                 emitter.emit('joined-channel', channel);
                 emitter.emit('switch-tab', tabId);
             },
+            onMode: (nick, channel, mode) => {
+                emitter.emit('mode-change', { nick, channel, mode });
+            },
             onPrivmsg: (nick) => {
                 emitter.emit('new-privmsg', nick);
             },
@@ -52,9 +55,9 @@ export function useIrcClient(chat_token: string) {
                 // WHOIS to sync client data
                 await client?.whois(newNick);
             },
-            onWhois: async (nick, realName) => {
+            onWhois: async (nick, realname) => {
                 try {
-                    await coreApi.updateUser(realName, { nick, realname: realName });
+                    await coreApi.updateUser(realname, { nick, realname });
                 } catch (err) {
                     console.error(`[API Sync] Failed to sync onWhois:`, err);
                 }

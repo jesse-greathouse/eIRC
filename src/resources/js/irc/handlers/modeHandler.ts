@@ -25,4 +25,9 @@ export const modeHandler: IrcEventHandler = async (client, line) => {
     // Ensure they are in each other's sets (defensive sync)
     channel.addUser(user);
     user.addChannel(channel);
+
+    // Refresh WHOIS for target.
+    await client.whois(modeTarget);
+
+    client.opts.onMode?.(modeTarget, target, mode);
 };

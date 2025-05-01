@@ -29,4 +29,6 @@ export const kickHandler: IrcEventHandler = async (client, line) => {
     bufferLine.raw = `${kickedNick} was kicked from ${channelName} (${reason})`;
 
     client.opts.addUserLineTo?.(tabId, bufferLine);
+
+    client.opts.onKick?.(kickedNick, channelName, reason);
 };

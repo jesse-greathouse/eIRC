@@ -28,11 +28,16 @@ const props = defineProps<{
             <ul class="text-gray-700 dark:text-gray-300 space-y-1">
                 <li v-for="(line, index) in tabLines" :key="line.id ?? index">
                     <template v-if="classifyLine(line, 'privmsg') === 'message'">
-                        <span class="font-medium text-indigo-500">{{ getUser(line) }}</span>:
+                        <span class="font-medium text-gray-400">{{ getUser(line) }}</span>:
                         {{ line.params[1] }}
                     </template>
                     <template v-else-if="classifyLine(line, 'privmsg') === 'notice'">
                         <span class="font-semibold text-green-600">{{ line.params[1] }}</span>
+                    </template>
+                    <template v-else-if="entry.type === 'action'">
+                        <span class="text-indigo-500 italic">
+                            * {{ getUser(entry.line) }} {{ entry.line.params[1] }}
+                        </span>
                     </template>
                     <template v-else>
                         {{ line.raw }}

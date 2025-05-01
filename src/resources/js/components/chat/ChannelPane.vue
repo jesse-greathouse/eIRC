@@ -34,6 +34,15 @@ const channel = computed(() => {
     return client.value.channels.get(channelName) ?? null;
 });
 
+const classifiedTabLines = computed(() => {
+    const lines = props.lines.get(props.tabId)?.map(line => ({
+        line,
+        type: classifyLine(line, 'channel'),
+    })) ?? [];
+
+    return lines;
+});
+
 const userVersion = ref('');
 
 const channelUsers = computed(() => {
@@ -47,9 +56,13 @@ function formatNoticeLine(line: IrcLine): string {
         return `-- ${setter}`;
     }
 
-    const raw = line.params[2] ?? line.raw;
+    if (line.command === IRC_EVENT_KEYS.TOPIC) {
+        const topic = line.params[1] ?? '';
+        const setter = line.prefix?.split('!')[0] ?? 'unknown';
+        return `${linkifyHtml(topic)}<br><span>-- ${setter}</span>`;
+    }
 
-    return linkifyHtml(raw);
+    return linkifyHtml(line.params[2] ?? line.raw ?? '');
 }
 </script>
 
@@ -60,23 +73,34 @@ function formatNoticeLine(line: IrcLine): string {
             <ChannelPaneHeader :channel="channel?.name" :topic="channel?.topic" />
         </template>
 
-        <template #default="{ tabLines }">
+        <template #default>
             <div class="flex w-full h-full gap-4">
                 <!-- Chat Buffer -->
                 <ul class="flex-1 text-gray-700 dark:text-gray-300 space-y-1 pt-4">
-                    <li v-for="(line, index) in tabLines" :key="line.id ?? index">
-                        <template v-if="classifyLine(line, 'channel') === 'message'">
-                            <span class="font-medium text-indigo-500">{{ getUser(line) }}</span>:
-                            {{ line.params[1] }}
+                    <li v-for="(entry, index) in classifiedTabLines" :key="entry.line.id ?? index">
+                        <template v-if="entry.type === 'action'">
+                            <span class="text-gray-400 italic font-semibold">
+                                * {{ getUser(entry.line) }} {{ entry.line.params[1] }}
+                            </span>
                         </template>
-                        <template v-else-if="classifyLine(line, 'channel') === 'notice'">
-                            <span class="font-semibold text-green-600" v-html="formatNoticeLine(line)"></span>
+
+                        <template v-else-if="entry.type === 'message'">
+                            <span class="font-medium text-indigo-500">{{ getUser(entry.line) }}</span>:
+                            {{ entry.line.params[1] }}
                         </template>
-                        <template v-else-if="classifyLine(line, 'channel') === 'server'">
-                            <span class="font-semibold text-blue-400 italic" v-html="formatNoticeLine(line)"></span>
+
+                        <template v-else-if="entry.type === 'notice'">
+                            <span class="font-semibold text-green-600" v-html="formatNoticeLine(entry.line)"></span>
                         </template>
-                        <template v-else-if="classifyLine(line, 'channel') === 'event'">
-                            <span class="font-semibold text-cyan-500">• {{ renderEventText(line) }}</span>
+
+                        <template v-else-if="entry.type === 'server'">
+                            <span class="font-semibold text-blue-400 italic"
+                                v-html="formatNoticeLine(entry.line)"></span>
+                        </template>
+
+                        <template v-else-if="entry.type === 'event'">
+                            <span class="font-semibold text-cyan-500"
+                                v-html="`• ${renderEventText(entry.line)}`"></span>
                         </template>
                     </li>
                 </ul>
@@ -88,7 +112,7 @@ function formatNoticeLine(line: IrcLine): string {
                         <div class="flow-root">
                             <ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
                                 <li v-for="user in channelUsers" :key="user.nick">
-                                    <ChannelUserListCard :user="client?.users.get(user.nick) ?? user"
+                                    <ChannelUserListCard :channel="channel" :user="client?.users.get(user.nick) ?? user"
                                         :tab-id="props.tabId" @switch-tab="emit('switch-tab', $event)" />
                                 </li>
                             </ul>

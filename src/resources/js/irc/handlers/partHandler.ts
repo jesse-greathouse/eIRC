@@ -34,4 +34,6 @@ export const partHandler: IrcEventHandler = async (client, line) => {
     bufferLine.raw = `${userNick} has left ${channelName} ${partMsg}`;
 
     client.opts.addUserLineTo?.(tabId, bufferLine);
+
+    client.opts.onPart?.(userNick, channelName, partMsg);
 };

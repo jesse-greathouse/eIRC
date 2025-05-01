@@ -22,5 +22,5 @@ export const privmsgHandler: IrcEventHandler = async (client, line) => {
     await client.whois(senderNick);
 
     // It's a private message
-    client.opts.onPrivmsg?.(senderNick);
+    client.opts.onPrivmsg?.(senderNick, message);
 };

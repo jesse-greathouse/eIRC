@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onBeforeUnmount, computed, nextTick } from 'vue';
 import type { User as IrcUser } from '@/irc/models/User';
+import type { Channel } from '@/irc/models/Channel'
 import type { Whois } from '@/irc/models/Whois'
 import type { IrcClient } from '@/irc/IrcClient';
 import type { Profile } from '@/types';
-import emitter from '@/lib/emitter'; // Same event bus as elsewhere
+import emitter from '@/lib/emitter';
 import { useProfiles } from '@/composables/useProfiles';
 import { getIrcClient } from '@/composables/useIrcClient';
 import UserPopoverContent from '@/components/chat/UserPopoverContent.vue';
 
 interface Props {
     user: IrcUser;
+    channel: Channel;
 }
 
 const props = defineProps<Props>();
@@ -31,6 +33,19 @@ const popoverVisible = ref(false);
 const popoverId = `popover-${props.user.nick}`;
 const popoverPosition = ref({ top: 0, left: 0 });
 
+// User state handling
+const modeTick = ref(0);
+const isAway = ref(false);
+const awayMessage = ref('...');
+const isOp = computed(() => {
+    void modeTick.value; // depend on tick
+    return client?.value?.isChannelOp(props.user.nick, props.channel?.name);
+});
+const isVoice = computed(() => {
+    void modeTick.value; // depend on tick
+    return client?.value?.isChannelVoice(props.user.nick, props.channel?.name);
+});
+
 // Avatar URL directly from profile
 const avatarUrl = computed(() => {
     return profile.value?.selected_avatar?.base64_data || '/avatar-placeholder.png';
@@ -38,10 +53,6 @@ const avatarUrl = computed(() => {
 
 // Nick straight from ircUser
 const nick = computed(() => ircUser.value.nick);
-
-// Away handling.
-const isAway = ref(false);
-const awayMessage = ref('...');
 
 onMounted(async () => {
     client.value = await getIrcClient();
@@ -51,10 +62,17 @@ onMounted(async () => {
     emitter.on('close-all-popovers', () => {
         popoverVisible.value = false;
     });
+
+    emitter.on('mode-change', ({ nick, channel }) => {
+        if (nick === props.user.nick && channel === props.channel?.name) {
+            modeTick.value++; // triggers recomputation of isOp and isVoice
+        }
+    });
 });
 
 onBeforeUnmount(() => {
     emitter.off('close-all-popovers');
+    emitter.off('mode-change');
 });
 
 watch(
@@ -200,11 +218,43 @@ function normalizeAwayMessage(message: string | null | undefined): string {
 </script>
 
 <template>
-    <div
-        class="flex items-center py-2 px-2 rounded-md transition duration-150 ease-out transform hover:shadow-sm hover:-translate-y-0.5 hover:border hover:border-gray-300 dark:hover:border-gray-600 cursor-pointer relative"
+    <div class="flex items-center py-2 px-2 rounded-md transition duration-150 ease-out transform hover:shadow-sm hover:-translate-y-0.5 hover:border hover:border-gray-300 dark:hover:border-gray-600 cursor-pointer relative"
         @click="handleLeftClick" @contextmenu="handleRightClick" @mouseenter="handleMouseEnter">
         <div class="shrink-0 relative">
             <img class="w-12 h-12 rounded-full" :src="avatarUrl" alt="User avatar" />
+
+            <!-- Operator Icon -->
+            <svg v-if="isOp" class="absolute top-1/2 -left-4 w-[30px] h-[30px] transform -translate-y-1/2 z-10"
+                viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#FFD700" />
+                        <stop offset="100%" stop-color="#FFA500" />
+                    </linearGradient>
+                    <filter id="dropShadow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="black" flood-opacity="0.3" />
+                    </filter>
+                </defs>
+                <circle cx="50" cy="50" r="45" fill="url(#goldGradient)" stroke="#d4af37" stroke-width="4"
+                    filter="url(#dropShadow)" />
+                <text x="49%" y="51%" text-anchor="middle" fill="white" font-size="60" font-weight="bold"
+                    dy=".25em">@</text>
+            </svg>
+
+            <!-- Voice Icon -->
+            <svg v-else-if="isVoice" class="absolute top-1/2 -left-4 w-[30px] h-[30px] transform -translate-y-1/2 z-10"
+                viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="violetGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#c084fc" /> <!-- lighter violet -->
+                        <stop offset="100%" stop-color="#a855f7" />
+                    </linearGradient>
+                </defs>
+                <circle cx="50" cy="50" r="45" fill="url(#violetGradient)" stroke="#9333ea" stroke-width="4"
+                    filter="url(#dropShadow)" />
+                <text x="50%" y="53%" text-anchor="middle" fill="white" font-size="60" font-weight="bold"
+                    dy=".3em">+</text>
+            </svg>
 
             <!-- Away/Online Dot -->
             <span
@@ -216,8 +266,7 @@ function normalizeAwayMessage(message: string | null | undefined): string {
             </span>
 
             <!-- Away Message Badge -->
-            <span
-                v-if="isAway"
+            <span v-if="isAway"
                 class="absolute bottom-0 left-12 transform translate-y-1/4 bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-gray-400 border border-gray-500 whitespace-nowrap">
                 {{ awayMessage }}
             </span>
@@ -230,12 +279,12 @@ function normalizeAwayMessage(message: string | null | undefined): string {
         <Teleport to="body">
             <transition name="fade">
                 <div v-if="popoverVisible" class="popover-wrapper">
-                    <div
-                        :id="popoverId" ref="popoverRef"
+                    <div :id="popoverId" ref="popoverRef"
                         class="fixed z-50 inline-block text-sm text-gray-500 bg-white border border-gray-200 rounded-lg shadow-md p-3 dark:text-gray-400 dark:border-gray-600 dark:bg-gray-800"
                         :style="{ top: popoverPosition.top + 'px', left: popoverPosition.left + 'px' }"
                         @mouseenter="onPopoverMouseEnter" @mouseleave="onPopoverMouseLeave">
-                        <UserPopoverContent :whois="whois as Whois" :profile="profile" />
+                        <UserPopoverContent :channel="channel" :client="client" :whois="whois as Whois"
+                            :profile="profile" @switch-tab="emit('switch-tab', $event)" />
                     </div>
                 </div>
             </transition>

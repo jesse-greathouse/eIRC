@@ -36,4 +36,7 @@ export const quitHandler: IrcEventHandler = async (client, line) => {
     }
 
     client.users.delete(userNick);
+
+    // It's a private message
+    client.opts.onPrivmsg?.(userNick, quitMsg);
 };
