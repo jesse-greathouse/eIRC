@@ -2,7 +2,10 @@
 
 ## Overview
 
-**eIRC** is a modern, vertically-scalable enterprise messaging architecture built on the IRC protocol. Designed for organizations that require ephemeral, real-time communication without the heavy operational overhead of pub/sub systems like Apache Kafka, eIRC delivers high-throughput, low-latency chat experiences while minimizing memory and CPU usage per user.
+**eIRC** is a modern, scalable enterprise messaging architecture built on the IRC protocol. Designed for organizations that require ephemeral, real-time communication without the heavy operational overhead of pub/sub systems like Apache Kafka, eIRC delivers high-throughput, low-latency chat experiences while minimizing memory and CPU usage per user.
+
+![Vue 3 SPA IRC client with TypeScript](https://i.imgur.com/Zc9kdgK.png)
+_<small>The client is a fully TypeScript IRC client made with Vue3</small>_
 
 ![eIRC Architecture Diagram](https://i.imgur.com/d5CblBK.png)
 _<small>The architecture is represented using a C4 Container Diagram.</small>_
