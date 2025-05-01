@@ -117,9 +117,10 @@ export default {
         // Layout
         'overflow-hidden', 'list-decimal',
         // Fonts
-        'font-size', 'text-xs', 'text-base', 'text-xl', 'font-poppins', 'font-roboto', 'font-sans', 'leading-relaxed',
+        'italic', 'leading-relaxed',
+        'font-size', 'text-xs', 'text-base', 'text-xl', 'font-poppins', 'font-roboto', 'font-sans',
         // Effects
-        'tracking-tight',,
+        'tracking-tight',
         // Transition
         'transition',
     ],

@@ -3,6 +3,10 @@ import type { IrcEventHandler } from '../types';
 import { IrcLine } from '@/types/IrcLine';
 import { nanoid } from 'nanoid';
 
+function cloneLine(line: IrcLine): IrcLine {
+    return new IrcLine({ ...line.toObject(), id: nanoid(), timestamp: Date.now() });
+}
+
 export const joinHandler: IrcEventHandler = async (client, line) => {
     await nextTick();
     const userNick = line.prefix?.split('!')[0];
@@ -20,17 +24,12 @@ export const joinHandler: IrcEventHandler = async (client, line) => {
         client.opts.onJoinChannel?.(channelName);
     }
 
-    // Compose a new IrcLine for buffer rendering
-   const message = `${userNick} has joined ${channelName}`;
-    const bufferLine = new IrcLine({
-        id: nanoid(),
-        timestamp: Date.now(),
-        raw: message,
-        command: 'JOIN',
-        params: [channelName, message],
-        prefix: `${userNick}!joined@server`,
-    });
-
     const tabId = `channel-${channelName}`;
+
+    // Compose a new IrcLine for buffer rendering
+    const bufferLine = cloneLine(line);
+    bufferLine.command = line.command;
+    bufferLine.raw = `${userNick} has joined ${channelName}`;
+
     client.opts.addUserLineTo?.(tabId, bufferLine);
 };

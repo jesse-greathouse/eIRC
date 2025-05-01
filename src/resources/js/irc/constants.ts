@@ -8,6 +8,7 @@ export const IRC_EVENT_KEYS = {
     NICK: 'NICK',
     TOPIC: 'TOPIC',
     MODE: 'MODE',
+    NOTICE: 'NOTICE',
     WELCOME: '001',
 
     // RPL replies

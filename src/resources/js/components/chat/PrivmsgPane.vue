@@ -2,7 +2,8 @@
 import BaseChatPane from './BaseChatPane.vue';
 import PrivmsgPaneHeader from './PrivmsgPaneHeader.vue'
 import ChatInput from './ChatInput.vue';
-import { classifyLine, getUser } from './helpers';
+import { classifyLine } from '@/irc/utils/classifyLine';
+import { getUser } from './helpers';
 import type { IrcLine } from '@/types/IrcLine';
 
 const emit = defineEmits<{

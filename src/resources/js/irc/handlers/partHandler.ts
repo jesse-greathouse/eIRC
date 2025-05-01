@@ -3,6 +3,10 @@ import type { IrcEventHandler } from '../types';
 import { IrcLine } from '@/types/IrcLine';
 import { nanoid } from 'nanoid';
 
+function cloneLine(line: IrcLine): IrcLine {
+    return new IrcLine({ ...line.toObject(), id: nanoid(), timestamp: Date.now() });
+}
+
 export const partHandler: IrcEventHandler = async (client, line) => {
     await nextTick();
     const userNick = line.prefix?.split('!')[0];
@@ -23,13 +27,11 @@ export const partHandler: IrcEventHandler = async (client, line) => {
     if (channel.users.size === 0) client.channels.delete(channelName);
 
     const tabId = `channel-${channelName}`;
-    const message = `${userNick} has left ${channelName} ${partMsg}`;
-    client.opts.addUserLineTo?.(tabId, new IrcLine({
-        id: nanoid(),
-        timestamp: Date.now(),
-        raw: message,
-        command: 'PART',
-        params: [channelName, message],
-        prefix: `${userNick}!left@server`,
-    }));
+
+    // Compose a new IrcLine for buffer rendering
+    const bufferLine = cloneLine(line);
+    bufferLine.command = line.command;
+    bufferLine.raw = `${userNick} has left ${channelName} ${partMsg}`;
+
+    client.opts.addUserLineTo?.(tabId, bufferLine);
 };

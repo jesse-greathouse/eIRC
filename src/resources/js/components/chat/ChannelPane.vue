@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { computed, ref, onMounted } from 'vue';
+import { IRC_EVENT_KEYS } from '@/irc/constants';
+import { classifyLine } from '@/irc/utils/classifyLine';
 import type { IrcLine } from '@/types/IrcLine';
 import type { IrcClient } from '@/irc/IrcClient';
-import { classifyLine, getUser, renderEventText } from './helpers';
+import { getUser, renderEventText } from './helpers';
+import { linkifyHtml } from '@/composables/useLinkify';
 import { getIrcClient } from '@/composables/useIrcClient';
 import ChannelPaneHeader from './ChannelPaneHeader.vue';
 import ChannelUserListCard from './ChannelUserListCard.vue';
@@ -37,6 +40,17 @@ const channelUsers = computed(() => {
     void userVersion.value; // Dependency for reactivity
     return channel.value?.users ?? [];
 });
+
+function formatNoticeLine(line: IrcLine): string {
+    if (line.command === IRC_EVENT_KEYS.RPL_TOPICWHOTIME && line.params.length >= 3) {
+        const setter = line.params[2]?.split('!')[0] ?? 'unknown';
+        return `-- ${setter}`;
+    }
+
+    const raw = line.params[2] ?? line.raw;
+
+    return linkifyHtml(raw);
+}
 </script>
 
 <template>
@@ -56,7 +70,10 @@ const channelUsers = computed(() => {
                             {{ line.params[1] }}
                         </template>
                         <template v-else-if="classifyLine(line, 'channel') === 'notice'">
-                            <span class="font-semibold text-green-600">{{ line.params[1] }}</span>
+                            <span class="font-semibold text-green-600" v-html="formatNoticeLine(line)"></span>
+                        </template>
+                        <template v-else-if="classifyLine(line, 'channel') === 'server'">
+                            <span class="font-semibold text-blue-400 italic" v-html="formatNoticeLine(line)"></span>
                         </template>
                         <template v-else-if="classifyLine(line, 'channel') === 'event'">
                             <span class="font-semibold text-cyan-500">• {{ renderEventText(line) }}</span>
@@ -71,10 +88,8 @@ const channelUsers = computed(() => {
                         <div class="flow-root">
                             <ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
                                 <li v-for="user in channelUsers" :key="user.nick">
-                                    <ChannelUserListCard
-                                        :user="client?.users.get(user.nick) ?? user"
-                                        :tab-id="props.tabId"
-                                        @switch-tab="emit('switch-tab', $event)" />
+                                    <ChannelUserListCard :user="client?.users.get(user.nick) ?? user"
+                                        :tab-id="props.tabId" @switch-tab="emit('switch-tab', $event)" />
                                 </li>
                             </ul>
                         </div>
