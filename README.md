@@ -23,9 +23,6 @@ The system is composed of three core architectural tiers:
 1. **Frontend Client** (any browser-based or native application)
 2. **Session Bridge Layer** (WebSocket server running in OpenResty, per-user IRC client process)
 3. **Infrastructure Services** (IRC server, Laravel-based backend, persistent database)
-
-This whitepaper outlines the full technical architecture, component responsibilities, communication paths, deployment model, and scalability considerations.
-
 ---
 
 ## 1. Frontend Client
