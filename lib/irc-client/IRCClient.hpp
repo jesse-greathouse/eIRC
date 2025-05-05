@@ -6,68 +6,98 @@
 
 #pragma once
 
-#include <string>
-#include <map>
-#include <optional>
-#include <vector>
+#include <utility>
 #include <asio.hpp>
+#include <asio/ssl.hpp>
 #include <atomic>
+#include <functional>
+#include <map>
+#include <memory>
+#include <optional>
+#include <string>
+#include <thread>
+#include <vector>
+
 #include "Channel.hpp"
+#include "Commands/Command.hpp"
 #include "EventHandler.hpp"
+#include "IOAdapter.hpp"
 #include "Logger.hpp"
 #include "User.hpp"
-#include "IOAdapter.hpp"
-#include "Commands/Command.hpp"
+
 
 class IRCClient
 {
 public:
-	IRCClient(asio::io_context &, Logger &, IOAdapter &, const std::vector<std::string> &channels);
+	using tcp_socket = asio::ip::tcp::socket;
+	using ssl_stream = asio::ssl::stream<tcp_socket>;
+
+	IRCClient(asio::io_context &context, Logger &logger, IOAdapter &ui, const std::vector<std::string> &channels);
 
 	void connect(const std::string &server, int port);
 	void authenticate(const std::string &nick, const std::string &user, const std::string &realname);
 	void startInputLoop();
 	void readLoop(const std::vector<std::string> &channels);
-	void signoff(const std::map<std::string, Channel> &channels, const std::string &quitMessage);
-	void addEventHandler(const std::string &eventKey, std::function<void(IRCClient &, const std::string &)> handler);
-	void joinChannels(const std::vector<std::string> &channels);
-	bool isJoined() const;
-	bool getJoined() const;
-	void setJoined(bool joined);
 	void joinInputLoop();
 	void stop();
+	void signoff(const std::map<std::string, Channel> &channels, const std::string &quitMessage);
 
-	std::string formatUserList(const std::string &channelName) const;
-	std::string formatChannelList() const;
-	const std::vector<std::string> &getJoinedChannels() const;
-	asio::ip::tcp::socket &getSocket();
-	IOAdapter &getUi();
+	void joinChannels(const std::vector<std::string> &channels);
+	void sendRaw(const std::string &line);
+
+	void addEventHandler(const std::string &eventKey, std::function<void(IRCClient &, const std::string &)> handler);
+
+	[[nodiscard]] bool isJoined() const noexcept;
+	void setJoined(bool joined);
+
+	[[nodiscard]] std::string formatUserList(const std::string &channelName) const;
+	[[nodiscard]] std::string formatChannelList() const;
+
+	[[nodiscard]] const std::vector<std::string> &getJoinedChannels() const;
+	[[nodiscard]] const std::map<std::string, User> &getUsers() const;
+	[[nodiscard]] const std::map<std::string, Channel> &getChannels() const;
+
 	User *findOrCreateUser(const std::string &nick);
-	const std::map<std::string, User> &getUsers() const;
-	const std::map<std::string, Channel> &getChannels() const;
 
-	// Access to Logger and Channels
 	Logger &getLogger();
+	IOAdapter &getUi();
 
-	// Public so event handlers can call this
+	// Public for use in event handlers
 	void handlePing(const std::string &message);
 	void handleNameReply(const std::string &rawLine);
+
+	template <typename T>
+	T &getSocket();
 
 private:
 	void registerEventHandlers();
 	void registerCommands();
 	void sanitizeInput(std::string &input);
 
-	std::map<std::string, EventHandler> eventHandlers;
-	std::map<std::string, User> users;
-	std::map<std::string, Channel> channels;
-	std::vector<Command> commands;
+	void writeToServer(const std::string &message);
+	std::size_t readFromServer(char *data, std::size_t size);
+
+	template <typename SocketType>
+	void writeToSocket(SocketType &socket, const std::string &message);
+
 	asio::io_context &ioContext;
-	asio::ip::tcp::socket socket;
 	Logger &logger;
 	IOAdapter &ui;
-	std::atomic<bool> joined;
+
+	std::function<void(const std::string &)> socketWriter;
+	std::unique_ptr<asio::ip::tcp::socket> plainSocket;
+	std::unique_ptr<asio::ssl::stream<asio::ip::tcp::socket>> sslSocket;
+	std::optional<asio::ssl::context> sslContext;
+
+	bool useTls = false;
+	std::atomic<bool> joined = false;
+	std::atomic<bool> running = true;
+
+	std::map<std::string, User> users;
+	std::map<std::string, Channel> channels;
+	std::map<std::string, EventHandler> eventHandlers;
+	std::vector<Command> commands;
 	std::vector<std::string> joinedChannels;
-	std::atomic<bool> running{true};
+
 	std::thread inputThread;
 };

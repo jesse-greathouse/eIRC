@@ -13,9 +13,9 @@ our @EXPORT_OK = qw(install_system_dependencies install_php install_bazelisk);
 
 my @systemDependencies = qw(
     supervisor authbind expect openssl build-essential intltool autoconf
-    automake gcc curl pkg-config cpanminus libncurses-dev libpcre3-dev
-    libcurl4 libcurl4-openssl-dev libmagickwand-dev libssl-dev
-    libxslt1-dev libmysqlclient-dev libxml2 libxml2-dev libicu-dev
+    automake gcc-13 g++-13 libstdc++-13-dev curl pkg-config cpanminus 
+    libncurses-dev libpcre3-dev libcurl4 libcurl4-openssl-dev libmagickwand-dev 
+    libssl-dev libxslt1-dev libmysqlclient-dev libxml2 libxml2-dev libicu-dev
     libmagick++-dev libzip-dev libonig-dev libsodium-dev libglib2.0-dev
     libwebp-dev mysql-client imagemagick golang-go
 );
@@ -29,6 +29,9 @@ sub install_system_dependencies {
     my $username = getpwuid($<);
     print "Sudo is required for updating and installing system dependencies.\n";
     print "Please enter sudoers password for: $username elevated privileges.\n";
+
+    # Add the PPA toolchain for C++
+    add_toolchain_ppa();
 
     # Check if the golang PPA is already present
     my $ppa_check_cmd = q{
@@ -67,6 +70,18 @@ sub install_system_dependencies {
         command_result($?, $!, "Installed missing dependencies...", \@installCmd);
     } else {
         print "All system dependencies already installed.\n";
+    }
+
+    # Set GCC 13 and G++ 13 as default compilers if installed
+    my $gcc13 = system("which gcc-13 > /dev/null 2>&1");
+    my $gpp13 = system("which g++-13 > /dev/null 2>&1");
+
+    if ($gcc13 == 0 && $gpp13 == 0) {
+        system('sudo', 'update-alternatives', '--install', '/usr/bin/gcc', 'gcc', '/usr/bin/gcc-13', '100');
+        system('sudo', 'update-alternatives', '--install', '/usr/bin/g++', 'g++', '/usr/bin/g++-13', '100');
+        print "✓ GCC and G++ have been set to version 13.\n";
+    } else {
+        print "⚠ GCC 13 or G++ 13 not found after installation.\n";
     }
 }
 
@@ -163,6 +178,35 @@ sub install_bazelisk {
     command_result($?, $!, 'Run Bazelisk...', "$dir/bin/bazel version");
 
     chdir $originalDir;
+}
+
+sub add_toolchain_ppa {
+    # Check current GCC version
+    my $gcc_version_output = `gcc -dumpversion 2>/dev/null`;
+    chomp $gcc_version_output;
+
+    if ($gcc_version_output =~ /^(\d+)\./) {
+        my $major_version = $1;
+        if ($major_version >= 13) {
+            print "✓ GCC version $gcc_version_output is sufficient (>=13), skipping toolchain PPA.\n";
+            return;
+        }
+    }
+
+    # Add the PPA if not already added
+    my $ppa_check_cmd = q{
+        grep -rq 'ubuntu-toolchain-r/test' /etc/apt/sources.list /etc/apt/sources.list.d/ 2>/dev/null
+    };
+    my $ppa_exists = system('bash', '-c', $ppa_check_cmd);
+
+    if ($ppa_exists != 0) {
+        print "GCC too old ($gcc_version_output), adding toolchain PPA for newer GCC...\n";
+        my @addPpaCmd = ('sudo', 'add-apt-repository', '-y', 'ppa:ubuntu-toolchain-r/test');
+        system(@addPpaCmd);
+        command_result($?, $!, "Added Toolchain PPA...", \@addPpaCmd);
+    } else {
+        print "✓ Toolchain PPA already exists, skipping.\n";
+    }
 }
 
 1;

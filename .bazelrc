@@ -1,0 +1,6 @@
+build --cxxopt='-std=c++23'
+build --host_cxxopt='-std=c++23'
+
+build --compiler=gcc-13
+build --action_env=CC=/usr/bin/gcc-13
+build --action_env=CXX=/usr/bin/g++-13
