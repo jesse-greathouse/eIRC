@@ -1,5 +1,7 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 
+COPTS_CXX23 = ["-std=c++23"]
+
 cc_library(
     name = "irc_core",
     hdrs = [
@@ -32,7 +34,7 @@ cc_library(
         "IOAdapter.hpp",
         "NcursesUI.hpp",
     ],
-    copts = ["-std=c++23"],
+    copts = COPTS_CXX23,
     visibility = ["//visibility:public"],
 )
 
@@ -44,7 +46,7 @@ cc_library(
         "Logger.hpp",
         "UnixSocketUI.hpp",
     ],
-    copts = ["-std=c++23"],
+    copts = COPTS_CXX23,
     visibility = ["//visibility:public"],
 )
 
@@ -72,7 +74,7 @@ cc_library(
         "IRCClient.hpp",
         "IRCEventKeys.hpp",
     ],
-    copts = ["-std=c++23"],
+    copts = COPTS_CXX23,
     includes = ["Commands"],
     visibility = ["//visibility:public"],
     deps = [
@@ -96,6 +98,8 @@ cc_binary(
     linkopts = [
         "-lncurses",
         "-lpthread",
+        "-lssl",
+        "-lcrypto",
     ],
     visibility = ["//visibility:public"],
     deps = [

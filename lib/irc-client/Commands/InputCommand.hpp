@@ -20,6 +20,6 @@ inline Command InputCommand{
 	{
 		std::string raw = input.substr(7); // strip "/input "
 		std::string message = raw + "\n";
-		asio::write(client.getSocket(), asio::buffer(message));
+		client.writeToServer(message);
 		client.getLogger().log("→ " + raw);
 	}};
