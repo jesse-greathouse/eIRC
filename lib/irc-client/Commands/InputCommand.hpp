@@ -20,6 +20,6 @@ inline Command InputCommand{
 	{
 		std::string raw = input.substr(7); // strip "/input "
 		std::string message = raw + "\n";
-		client.sendRaw(message);
+		client.writeToServer(message);
 		client.getLogger().log("→ " + raw);
 	}};

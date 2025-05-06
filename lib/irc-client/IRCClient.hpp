@@ -9,6 +9,7 @@
 #include <utility>
 #include <asio.hpp>
 #include <asio/ssl.hpp>
+
 #include <atomic>
 #include <functional>
 #include <map>
@@ -17,6 +18,7 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <stdexcept>
 
 #include "Channel.hpp"
 #include "Commands/Command.hpp"
@@ -34,6 +36,12 @@ public:
 
 	IRCClient(asio::io_context &context, Logger &logger, IOAdapter &ui, const std::vector<std::string> &channels);
 
+	~IRCClient();
+
+	/**
+	 * Establish a connection to `server:port`.
+	 * If port==6697, performs a TLS handshake (may throw std::runtime_error on failure).
+	 */
 	void connect(const std::string &server, int port);
 	void authenticate(const std::string &nick, const std::string &user, const std::string &realname);
 	void startInputLoop();
@@ -41,9 +49,9 @@ public:
 	void joinInputLoop();
 	void stop();
 	void signoff(const std::map<std::string, Channel> &channels, const std::string &quitMessage);
+	void writeToServer(const std::string &message);
 
 	void joinChannels(const std::vector<std::string> &channels);
-	void sendRaw(const std::string &line);
 
 	void addEventHandler(const std::string &eventKey, std::function<void(IRCClient &, const std::string &)> handler);
 
@@ -74,7 +82,6 @@ private:
 	void registerCommands();
 	void sanitizeInput(std::string &input);
 
-	void writeToServer(const std::string &message);
 	std::size_t readFromServer(char *data, std::size_t size);
 
 	template <typename SocketType>

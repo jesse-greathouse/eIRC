@@ -9,6 +9,8 @@
 #include <thread>
 #include <sstream>
 #include <array>
+#include <system_error>
+#include <asio/error_code.hpp>
 
 #include "Commands/QuitCommand.hpp"
 #include "Commands/UsersCommand.hpp"
@@ -29,6 +31,11 @@ IRCClient::IRCClient(asio::io_context &context, Logger &logger, IOAdapter &ui, c
 
     registerCommands();
     registerEventHandlers();
+}
+
+IRCClient::~IRCClient()
+{
+    joinInputLoop();
 }
 
 void IRCClient::registerCommands()
@@ -79,7 +86,9 @@ void IRCClient::registerEventHandlers()
 template <typename SocketType>
 void IRCClient::writeToSocket(SocketType &socket, const std::string &message)
 {
-    asio::write(socket, asio::buffer(message));
+    // explicit data pointer + length
+    asio::write(socket,
+                asio::buffer(message.data(), message.size()));
 }
 
 void IRCClient::connect(const std::string &server, int port)
@@ -95,7 +104,15 @@ void IRCClient::connect(const std::string &server, int port)
 
         sslSocket = std::make_unique<ssl_stream>(ioContext, *sslContext);
         asio::connect(sslSocket->next_layer(), endpoints);
-        sslSocket->handshake(asio::ssl::stream_base::client);
+
+        // → Perform TLS handshake with explicit error handling
+        asio::error_code ec;
+        sslSocket->handshake(asio::ssl::stream_base::client, ec);
+        if (ec)
+        {
+            throw std::runtime_error("TLS handshake failed: " + ec.message());
+        }
+
         socketWriter = [this](const std::string &msg)
         {
             writeToSocket(*sslSocket, msg);
@@ -114,15 +131,7 @@ void IRCClient::connect(const std::string &server, int port)
 
 void IRCClient::authenticate(const std::string &nick, const std::string &user, const std::string &realname)
 {
-    sendRaw(std::format("NICK {}\nUSER {} 0 * :{}\n", nick, user, realname));
-}
-
-void IRCClient::sendRaw(const std::string &line)
-{
-    if (socketWriter)
-        socketWriter(line);
-    else
-        throw std::runtime_error("SocketWriter not initialized");
+    writeToServer(std::format("NICK {}\nUSER {} 0 * :{}\n", nick, user, realname));
 }
 
 std::size_t IRCClient::readFromServer(char *buf, std::size_t size)
@@ -217,7 +226,8 @@ void IRCClient::readLoop(const std::vector<std::string> &channels)
 template <typename SocketType>
 void writeToServer(SocketType &socket, const std::string &message)
 {
-    asio::write(socket, asio::buffer(message));
+    asio::write(socket,
+                asio::buffer(message.data(), message.size()));
 }
 
 void IRCClient::writeToServer(const std::string &message)
@@ -229,13 +239,24 @@ void IRCClient::writeToServer(const std::string &message)
 
 void IRCClient::handlePing(const std::string &message)
 {
+    // 1) Extract the ping payload
     std::string payload = message.substr(message.find(':') + 1);
     payload.erase(std::remove(payload.begin(), payload.end(), '\r'), payload.end());
     payload.erase(std::remove(payload.begin(), payload.end(), '\n'), payload.end());
 
+    // 2) Build the PONG response
     std::string response = "PONG :" + payload + "\n";
-    writeToServer(response);
-    logger.log("→ " + response.substr(0, response.size() - 1));
+
+    // 3) Attempt send, log success; on error, catch and log exception
+    try
+    {
+        writeToServer(response);
+        logger.log("→ " + response.substr(0, response.size() - 1));
+    }
+    catch (const std::exception &ex)
+    {
+        logger.log("! PONG failed: " + std::string(ex.what()));
+    }
 }
 
 void IRCClient::handleNameReply(const std::string &rawLine)
@@ -367,6 +388,9 @@ void IRCClient::sanitizeInput(std::string &input)
 
 void IRCClient::joinInputLoop()
 {
+    // Tell the loop to exit (unblocks read()/getInput())
+    stop();
+
     if (inputThread.joinable())
         inputThread.join();
 }
