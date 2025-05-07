@@ -12,4 +12,5 @@ struct IRCEventKey
 	static constexpr const char *MotdEnd = "MOTD_END";
 	static constexpr const char *Privmsg = "PRIVMSG";
 	static constexpr const char *Whois = "WHOIS";
+	static constexpr const char *Cap = "CAP"; // for CAP * LS / ACK
 };
