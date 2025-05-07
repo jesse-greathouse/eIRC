@@ -14,15 +14,26 @@ namespace fs = std::filesystem;
 ArgParser::ArgParser(int argc, char *argv[])
 {
 	std::map<std::string, std::string> args;
+	// Collect key=value into args (unchanged)
 	for (int i = 1; i < argc; ++i)
 	{
 		std::string arg(argv[i]);
 		auto eq = arg.find('=');
-		if (arg.rfind("--", 0) == 0 && eq != std::string::npos)
+		if (eq != std::string::npos && arg.rfind("--", 0) == 0)
 		{
 			args[arg.substr(2, eq - 2)] = arg.substr(eq + 1);
 		}
 	}
+
+	// Detect the "--sasl" flag (no '='):
+	for (int i = 1; i < argc; ++i)
+	{
+		if (std::string(argv[i]) == "--sasl")
+		{
+			parsed.useSasl = true;
+		}
+	}
+
 	applyUserAndRealnameDefaults(args);
 
 	parsed.server = args["server"];
@@ -30,6 +41,17 @@ ArgParser::ArgParser(int argc, char *argv[])
 	parsed.instance = (args.count("instance") && !args["instance"].empty()) ? args["instance"] : makeInstanceId();
 	parsed.listenSocket = makeSocketPath(parsed.instance, args.count("listen") ? args["listen"] : "");
 	parsed.logPath = makeLogPath(parsed.instance, args.count("log") ? args["log"] : "");
+	parsed.password = args.count("password") ? args["password"] : "";
+
+	{
+		const auto &m = args["auth-mode"];
+		if (m == "sasl")
+			parsed.authMode = ParsedArgs::AuthMode::SASL;
+		else if (m == "nickserv")
+			parsed.authMode = ParsedArgs::AuthMode::NickServ;
+		else
+			parsed.authMode = ParsedArgs::AuthMode::None;
+	}
 
 	std::stringstream ss(args["channels"]);
 	std::string channel;

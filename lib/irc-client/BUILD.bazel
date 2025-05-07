@@ -68,11 +68,22 @@ cc_library(
 
 cc_library(
     name = "irc_client_lib",
-    srcs = ["IRCClient.cpp"],
+    srcs = [
+        "IRCClient.cpp",
+        # new auth adapter implementations:
+        "SaslAdapter.cpp",
+        "NickServAdapter.cpp",
+    ],
     hdrs = [
         "IOAdapter.hpp",
         "IRCClient.hpp",
         "IRCEventKeys.hpp",
+        # new auth adapter headers:
+        "AuthStrategy.hpp",
+        "SaslAdapter.hpp",
+        "NickServAdapter.hpp",
+        # Base64 helper:
+        "Base64.hpp",
     ],
     copts = COPTS_CXX23,
     includes = ["Commands"],

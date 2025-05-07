@@ -22,6 +22,15 @@ struct ParsedArgs
     std::string logPath;
     std::string listenSocket;
     std::string instance;
+
+    enum class AuthMode
+    {
+        None,
+        NickServ,
+        SASL
+    } authMode = AuthMode::None;
+    bool useSasl = false; // set by --sasl
+    std::string password;
 };
 
 class ArgParser
