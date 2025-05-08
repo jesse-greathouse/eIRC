@@ -13,52 +13,92 @@ namespace fs = std::filesystem;
 
 ArgParser::ArgParser(int argc, char *argv[])
 {
-	std::map<std::string, std::string> args;
-	// Collect key=value into args (unchanged)
-	for (int i = 1; i < argc; ++i)
+	// Grab argv into vector<string>
+	tokenize(argc, argv);
+
+	// Split into keyValues and flags
+	splitKeyValuesAndFlags();
+
+	// Use keyValues and flags to fill parsed:
+	parsed.useSasl = flags.count("--sasl") > 0;
+	parsed.server = keyValues["server"];
+	parsed.port = std::stoi(keyValues["port"]);
+
+	// If instance id isnt set, make one
+	parsed.instance = (!keyValues["instance"].empty())
+						  ? keyValues["instance"]
+						  : makeInstanceId();
+	// Init socket path
+	parsed.listenSocket = makeSocketPath(
+		parsed.instance,
+		keyValues.count("listen") ? keyValues["listen"] : "");
+
+	// Init log path
+	parsed.logPath = makeLogPath(
+		parsed.instance,
+		keyValues.count("log") ? keyValues["log"] : "");
+
+	// channels
 	{
-		std::string arg(argv[i]);
-		auto eq = arg.find('=');
-		if (eq != std::string::npos && arg.rfind("--", 0) == 0)
+		std::stringstream ss(keyValues["channels"]);
+		std::string chan;
+		while (std::getline(ss, chan, ','))
 		{
-			args[arg.substr(2, eq - 2)] = arg.substr(eq + 1);
+			parsed.channels.push_back(chan);
 		}
 	}
 
-	// Detect the "--sasl" flag (no '='):
+	// finally apply nick/realname defaults
+	applyUserAndRealnameDefaults();
+}
+
+void ArgParser::tokenize(int argc, char *argv[])
+{
+	tokens.reserve(argc - 1);
 	for (int i = 1; i < argc; ++i)
 	{
-		if (std::string(argv[i]) == "--sasl")
+		tokens.emplace_back(argv[i]);
+	}
+}
+
+void ArgParser::splitKeyValuesAndFlags()
+{
+	for (auto &tk : tokens)
+	{
+		if (!tk.rfind("--", 0))
 		{
-			parsed.useSasl = true;
+			auto eq = tk.find('=');
+			if (eq != std::string::npos)
+			{
+				// it's --key=value
+				auto key = tk.substr(2, eq - 2);
+				auto val = tk.substr(eq + 1);
+				keyValues[key] = val;
+			}
+			else
+			{
+				// it's a bare flag
+				flags.insert(tk);
+			}
 		}
 	}
+}
 
-	applyUserAndRealnameDefaults(args);
-
-	parsed.server = args["server"];
-	parsed.port = std::stoi(args["port"]);
-	parsed.instance = (args.count("instance") && !args["instance"].empty()) ? args["instance"] : makeInstanceId();
-	parsed.listenSocket = makeSocketPath(parsed.instance, args.count("listen") ? args["listen"] : "");
-	parsed.logPath = makeLogPath(parsed.instance, args.count("log") ? args["log"] : "");
-	parsed.password = args.count("password") ? args["password"] : "";
-
+void ArgParser::applyUserAndRealnameDefaults()
+{
+	// same as before, but pull from keyValues instead of passed map
+	auto it = keyValues.find("nick");
+	if (it == keyValues.end() || it->second.empty())
 	{
-		const auto &m = args["auth-mode"];
-		if (m == "sasl")
-			parsed.authMode = ParsedArgs::AuthMode::SASL;
-		else if (m == "nickserv")
-			parsed.authMode = ParsedArgs::AuthMode::NickServ;
-		else
-			parsed.authMode = ParsedArgs::AuthMode::None;
+		throw std::invalid_argument("Missing required argument: --nick");
 	}
+	parsed.nick = it->second;
 
-	std::stringstream ss(args["channels"]);
-	std::string channel;
-	while (std::getline(ss, channel, ','))
-	{
-		parsed.channels.push_back(channel);
-	}
+	auto rn = keyValues.find("realname");
+	parsed.realname = (rn != keyValues.end() && !rn->second.empty())
+						  ? rn->second
+						  : parsed.nick;
+	parsed.user = parsed.realname;
 }
 
 ParsedArgs ArgParser::getArgs() const
@@ -106,20 +146,4 @@ std::string ArgParser::makeSocketPath(const std::string &instance, const std::st
 	{
 		return (std::filesystem::current_path() / socketFile).string();
 	}
-}
-
-void ArgParser::applyUserAndRealnameDefaults(const std::map<std::string, std::string> &args)
-{
-	auto nickIt = args.find("nick");
-	if (nickIt == args.end() || nickIt->second.empty())
-	{
-		throw std::invalid_argument("Missing required argument: --nick");
-	}
-
-	parsed.nick = nickIt->second;
-
-	auto realnameIt = args.find("realname");
-	parsed.realname = (realnameIt != args.end() && !realnameIt->second.empty()) ? realnameIt->second : parsed.nick;
-
-	parsed.user = parsed.realname; // Keep user = realname
 }

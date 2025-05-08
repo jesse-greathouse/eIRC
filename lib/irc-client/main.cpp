@@ -87,20 +87,17 @@ int main(int argc, char *argv[])
         // Start client connection
         client.connect(args.server, args.port);
 
-        // 1) Choose adapter
+        // Choose adapter and negotiate authentication
         std::unique_ptr<AuthStrategy> auth;
         if (args.useSasl)
         {
-            // Pass the realname (unique user key) plus the password
-            auth = std::make_unique<SaslAdapter>(
-                args.realname,
-                args.password);
+            auth = std::make_unique<SaslAdapter>();
         }
         else
         {
-            auth = std::make_unique<NickServAdapter>(
-                args.password);
+            auth = std::make_unique<NickServAdapter>();
         }
+        auth->negotiate(client);
 
         // 2) Run negotiation
         auth->negotiate(client);

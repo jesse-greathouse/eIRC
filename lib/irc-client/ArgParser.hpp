@@ -8,6 +8,7 @@
 
 #include <string>
 #include <map>
+#include <set>
 #include <vector>
 #include <filesystem> // Required for computing logPath
 
@@ -22,15 +23,7 @@ struct ParsedArgs
     std::string logPath;
     std::string listenSocket;
     std::string instance;
-
-    enum class AuthMode
-    {
-        None,
-        NickServ,
-        SASL
-    } authMode = AuthMode::None;
     bool useSasl = false; // set by --sasl
-    std::string password;
 };
 
 class ArgParser
@@ -41,9 +34,18 @@ public:
 
 private:
 	ParsedArgs parsed;
-	std::string makeInstanceId() const;
 
+    // helper data structures
+    std::vector<std::string> tokens;              // raw argv strings
+    std::map<std::string, std::string> keyValues; // --key=value
+    std::set<std::string> flags;                  // bare --flag
+
+    // helper init methods
+    void tokenize(int argc, char *argv[]);
+    void splitKeyValuesAndFlags();
+    void applyUserAndRealnameDefaults();
+
+    std::string makeInstanceId() const;
 	std::string makeLogPath(const std::string &instance, const std::string &logDir) const;
 	std::string makeSocketPath(const std::string &instance, const std::string &listenDir) const;
-	void applyUserAndRealnameDefaults(const std::map<std::string, std::string> &args);
 };

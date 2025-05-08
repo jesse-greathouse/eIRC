@@ -4,8 +4,9 @@
 void NickServAdapter::negotiate(IRCClient &client)
 {
 	client.addEventHandler(IRCEventKey::MotdEnd,
-						   [this](IRCClient &c, const std::string &)
+						   [&](IRCClient &c, const std::string &)
 						   {
-							   c.writeToServer("PRIVMSG NickServ :IDENTIFY " + pass_ + "\n");
+							   // debug: NickServ identify point reached
+							   c.getLogger().log("[DEBUG] MOTD end; client ready for NickServ IDENTIFY");
 						   });
 }

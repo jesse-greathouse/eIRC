@@ -4,11 +4,6 @@
 
 struct NickServAdapter final : AuthStrategy
 {
-	explicit NickServAdapter(std::string pass)
-		: pass_(std::move(pass)) {}
-
+	NickServAdapter() = default;
 	void negotiate(IRCClient &client) override;
-
-private:
-	std::string pass_;
 };

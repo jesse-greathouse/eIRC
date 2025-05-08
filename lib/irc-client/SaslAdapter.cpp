@@ -1,33 +1,31 @@
 #include "SaslAdapter.hpp"
-#include "Base64.hpp"
 #include "IRCEventKeys.hpp"
 #include <asio/write.hpp>
 #include <functional>
 
 void SaslAdapter::negotiate(IRCClient &client)
 {
-	// CAP LS
+	// Start CAP LS
 	client.writeToServer("CAP LS 302\n");
-	// wait for CAP * LS reply and check for "sasl" in it
+
+	// On CAP LS reply, request SASL
 	client.addEventHandler(IRCEventKey::Cap,
 						   [&](IRCClient &, const std::string &line)
 						   {
-							   if (line.find("sasl") != std::string::npos && line.rfind("CAP * LS", 0) == 0)
+							   if (line.rfind("CAP * LS", 0) == 0 && line.find("sasl") != std::string::npos)
 							   {
 								   client.writeToServer("CAP REQ :sasl\n");
 							   }
 						   });
 
-	// after ACK, send AUTHENTICATE
+	// 3) On CAP ACK, *signal* over the UI socket that we need the AUTHENTICATE
 	client.addEventHandler(IRCEventKey::Cap,
 						   [&](IRCClient &, const std::string &line)
 						   {
 							   if (line == "CAP * ACK :sasl")
 							   {
-								   // Build PLAIN payload from stored user_ and pass_
-								   std::string raw = user_ + '\0' + user_ + '\0' + pass_;
-								   std::string b64 = encodeBase64(raw);
-								   client.writeToServer("AUTHENTICATE " + b64 + "\n");
+								   // debug: note that SASL ACK arrived
+								   client.getLogger().log("[DEBUG] Server acknowledged SASL, awaiting client-side AUTHENTICATE");
 							   }
 						   });
 
