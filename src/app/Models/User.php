@@ -27,6 +27,7 @@ class User extends Authenticatable
         'nick',
         'settings',
         'channels',
+        'sasl_secret',
     ];
 
     /**
@@ -53,6 +54,14 @@ class User extends Authenticatable
         ];
     }
 
+    /**
+     * Generate a strong random secret.
+     */
+    public static function generateSaslSecret(): string
+    {
+        return Str::random(40);
+    }
+
     public function profile()
     {
         return $this->hasOne(Profile::class);
@@ -60,6 +69,12 @@ class User extends Authenticatable
 
     protected static function booted()
     {
+        static::creating(function ($user) {
+            if (empty($user->sasl_secret)) {
+                $user->sasl_secret = self::generateSaslSecret();
+            }
+        });
+
         static::saving(function ($user) {
             if (!empty($user->name)) {
                 $base = Str::slug($user->name, '_'); // e.g. jesse_greathouse

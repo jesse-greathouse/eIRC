@@ -117,6 +117,7 @@ my %defaults = (
         SSL_KEY                     => $sslKey,
         IRC_SERVER_HOST             => '127.0.0.1',
         IRC_SERVER_PORT             => '6667',
+        IRC_USE_SASL                => 'false',
     },
     redis => {
         REDIS_HOST                  => '/var/run/redis/redis.sock',
@@ -267,6 +268,7 @@ sub request_user_input {
         ['nginx', 'SSL_KEY', 'SSL Key Path'],
         ['nginx', 'IRC_SERVER_HOST', 'IRC Server Host'],
         ['nginx', 'IRC_SERVER_PORT', 'IRC Server Port'],
+        ['nginx', 'IRC_USE_SASL',   'Enable SASL Authentication'],
 
         # Redis settings
         ['redis', 'REDIS_HOST', 'Redis Host'],

@@ -28,4 +28,9 @@ function _M.bin_dir()
     return os.getenv("BIN") or "/usr/local/bin"
 end
 
+-- Whether to use IRCv3 SASL
+function _M.use_sasl()
+    return os.getenv("IRC_USE_SASL") == "true"
+end
+
 return _M

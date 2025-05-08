@@ -14,7 +14,7 @@ local function get_socket_file(instance_id)
 end
 
 -- Spawns a new IRC client process unless already running for this instance
-function _M.start_client(nick, realname, server, port, channels, instance_id)
+function _M.start_client(nick, realname, server, port, channels, instance_id, sasl_secret)
   if not (nick and server and port and channels and instance_id) then
     ngx.log(ngx.ERR, "Missing required IRC client parameters")
     return nil, "Missing parameters"
@@ -62,8 +62,11 @@ function _M.start_client(nick, realname, server, port, channels, instance_id)
     return nil, err
   end
 
-  ngx.log(ngx.INFO, "IRC client spawned for instance_id ", instance_id)
   store.set_running(instance_id, true)
+  store.set_secret(instance_id, sasl_secret)
+  store.set_realname(instance_id, realname)
+
+  ngx.log(ngx.INFO, "IRC client spawned for instance_id ", instance_id)
   return true
 end
 
@@ -131,15 +134,41 @@ function _M.receive(instance_id, wb)
   end
 
   store.set_running(instance_id, true)
+  -- pull SASL flag & secret, and the realname username
+  local use_sasl = env.use_sasl()
+  local secret   = store.get_secret(instance_id) or ""
+  local user     = store.get_realname(instance_id) or instance_id
 
   store.set_reader(instance_id, ngx.thread.spawn(function()
     while store.running(instance_id) do
       local line, err = sock:receive("*l")
 
       if line then
+        -- ── SASL handshake steps if enabled ───────────────────
+        if use_sasl then
+          if line:match("^CAP %* LS") then
+            sock:send("CAP REQ :sasl\r\n")
+          elseif line == "CAP * ACK :sasl" then
+            local raw = user .. "\0" .. user .. "\0" .. secret
+            local b64 = ngx.encode_base64(raw)
+            sock:send("AUTHENTICATE " .. b64 .. "\r\n")
+          elseif line:match("^903") then
+            sock:send("CAP END\r\n")
+          end
+        end
+
+        -- ── NickServ IDENTIFY fallback if SASL disabled ───────
+        if not use_sasl then
+          if line:match("%s376%s") or line:match("%s422%s") then
+            sock:send("PRIVMSG NickServ :IDENTIFY " .. secret .. "\r\n")
+          end
+        end
+
         local ok, send_err = wb:send_text(line)
         if not ok then
-          ngx.log(ngx.INFO, "WebSocket no longer accepting messages for instance_id ", instance_id, ": ", send_err)
+          ngx.log(ngx.INFO,
+            "WebSocket no longer accepting messages for instance_id ",
+            instance_id, ": ", send_err)
           break
         end
 
@@ -147,11 +176,15 @@ function _M.receive(instance_id, wb)
         ngx.sleep(0.1)
 
       elseif err == "closed" then
-        ngx.log(ngx.INFO, "IRC socket closed normally for instance_id ", instance_id)
+        ngx.log(ngx.INFO,
+          "IRC socket closed normally for instance_id ",
+          instance_id)
         break
 
       else
-        ngx.log(ngx.ERR, "IRC socket closed unexpectedly (", err, ") for instance_id ", instance_id)
+        ngx.log(ngx.ERR,
+          "IRC socket closed unexpectedly (", err,
+          ") for instance_id ", instance_id)
         break
       end
     end

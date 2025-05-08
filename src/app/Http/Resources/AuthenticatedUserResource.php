@@ -14,9 +14,8 @@ class AuthenticatedUserResource extends JsonResource
             'realname' => $this->realname,
             'nick' => $this->nick,
             'email' => $this->email,
-
+            'sasl_secret'  => $this->sasl_secret,
             'channels' => $this->formatChannels(),
-
             'profile' => $this->whenLoaded('profile', function () {
                 return [
                     'bio' => $this->profile->bio,

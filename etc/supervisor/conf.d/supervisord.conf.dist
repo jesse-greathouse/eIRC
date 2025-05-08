@@ -72,7 +72,7 @@ priority=4
 
 [program:nginx]
 process_name=%(ENV_APP_NAME)s_web_%(program_name)s
-environment=APP_URL=%(ENV_APP_URL)s,SSL=%(ENV_SSL)s,REDIS_HOST=%(ENV_REDIS_HOST)s,DIR="%(ENV_DIR)s",BIN="%(ENV_BIN)s",ETC="%(ENV_ETC)s",OPT="%(ENV_OPT)s",TMP="%(ENV_TMP)s",VAR="%(ENV_VAR)s",WEB="%(ENV_WEB)s",LOG_DIR="%(ENV_LOG_DIR)s",CACHE_DIR="%(ENV_CACHE_DIR)s",PORT="%(ENV_PORT)s",IRC_SERVER_HOST="%(ENV_IRC_SERVER_HOST)s",IRC_SERVER_PORT="%(ENV_IRC_SERVER_PORT)s",PATH="%(ENV_BIN)s:%(ENV_OPT)s/openresty/nginx/sbin:%(ENV_PATH)s"
+environment=APP_URL=%(ENV_APP_URL)s,SSL=%(ENV_SSL)s,REDIS_HOST=%(ENV_REDIS_HOST)s,DIR="%(ENV_DIR)s",BIN="%(ENV_BIN)s",ETC="%(ENV_ETC)s",OPT="%(ENV_OPT)s",TMP="%(ENV_TMP)s",VAR="%(ENV_VAR)s",WEB="%(ENV_WEB)s",LOG_DIR="%(ENV_LOG_DIR)s",CACHE_DIR="%(ENV_CACHE_DIR)s",PORT="%(ENV_PORT)s",IRC_SERVER_HOST="%(ENV_IRC_SERVER_HOST)s",IRC_SERVER_PORT="%(ENV_IRC_SERVER_PORT)s",IRC_USE_SASL="%(ENV_IRC_USE_SASL)s",PATH="%(ENV_BIN)s:%(ENV_OPT)s/openresty/nginx/sbin:%(ENV_PATH)s"
 directory=%(ENV_DIR)s
 command=authbind --deep nginx -p %(ENV_OPT)s/openresty/nginx -c %(ENV_ETC)s/nginx/nginx.conf
 stdout_events_enabled=true
