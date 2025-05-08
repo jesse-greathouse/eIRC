@@ -406,8 +406,6 @@ sub assign_dynamic_config {
 
     $cfg{queue_manager}{QUEUECTL_USER} //= $ENV{"LOGNAME"};
     $cfg{queue_manager}{QUEUECTL_SECRET} //= $secret;
-    $cfg{queue_manager}{RABBITMQ_PORT} //= $cfg{queue_manager}{RABBITMQ_PORT} // $cfg{rabbitmq}{RABBITMQ_PORT};
-    $cfg{queue_manager}{RABBITMQ_NODENAME} //= $cfg{queue_manager}{RABBITMQ_NODENAME} // $cfg{rabbitmq}{RABBITMQ_NODENAME};
 
     # Assign dynamic Supervisor and Queue ports
     $cfg{supervisord}{SUPERVISORCTL_PORT} //= $supervisorPort;

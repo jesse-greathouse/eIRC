@@ -1,0 +1,36 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+use Cwd qw(getcwd abs_path);
+use File::Basename;
+use lib dirname(abs_path(__FILE__))."/modules";
+
+use eIRC::Queue qw(
+	queue_start queue_restart queue_stop queue_kill queue_help);
+
+#Dispatch table
+my % actions = (
+	start 	=> \& queue_start, 
+	restart => \& queue_restart,
+	stop 	=> \& queue_stop, 
+	kill 	=> sub { queue_stop(); queue_kill() }, 
+	help 	=> \& queue_help, 
+);
+
+#Grab the action, default to help
+my $action = shift @ARGV // 'help';
+if ($action =~ /^(-h|--help)$/) {
+    $action = 'help';
+}
+
+if (exists $actions{$action})
+{
+	$actions{$action}->();
+}
+else
+{
+	print "Unknown action '$action'\nUse 'help' for available commands.\n";
+	queue_help();
+	exit 1;
+}

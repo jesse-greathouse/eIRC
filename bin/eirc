@@ -1,0 +1,56 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use Cwd           qw(getcwd abs_path);
+use File::Basename;
+use lib dirname(abs_path(__FILE__)) . "/modules";
+
+use eIRC::Queue qw(
+    queue_start queue_restart queue_stop queue_kill queue_help
+);
+use eIRC::Web   qw(
+    web_start web_restart web_stop web_kill web_help
+);
+
+warn $@ if $@;  # handle any compile‐time errors
+
+# Get the action (start, restart, stop, kill, help)
+my ($action) = @ARGV;
+$action //= 'help';
+
+# Dispatch table
+if ($action eq 'start') {
+    queue_start();
+    web_start();
+
+} elsif ($action eq 'restart') {
+    queue_restart();
+    web_restart();
+
+} elsif ($action eq 'stop') {
+    web_stop();
+    queue_stop();
+
+} elsif ($action eq 'kill') {
+    web_stop();
+    queue_stop();
+    web_kill();
+    queue_kill();
+
+} elsif ($action eq 'help' or $action =~ /^(-h|--help)$/) {
+    print <<"EOF";
+Usage: eirc [start|restart|stop|kill|help]
+
+  start     — launch queue workers, then web services
+  restart   — restart both queue workers and web services
+  stop      — stop web services, then queue workers
+  kill      — stop all services and kill their supervisors
+  help      — show this message
+EOF
+    queue_help();
+    web_help();
+
+} else {
+    die "Unknown action '$action'.  Use 'eirc help' for available commands.\n";
+}
