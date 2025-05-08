@@ -43,13 +43,13 @@ function _M.route()
 
     -- Proceed to run the IRC client
     server.run(
-      user.nick,
-      user.realname,
-      env.irc_host(),
-      env.irc_port(),
-      user.channels or "",
-      instance_id,
-      user.sasl_secret
+        user.nick,
+        user.realname,
+        env.irc_host(),
+        env.irc_port(),
+        user.channels or "",
+        instance_id,
+        user.sasl_secret
     )
 end
 
