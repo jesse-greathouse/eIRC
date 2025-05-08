@@ -146,7 +146,7 @@ std::size_t IRCClient::readFromServer(char *buf, std::size_t size)
 void IRCClient::startInputLoop()
 {
     inputThread = std::thread([this]
-                              {
+        {
         try {
             while (running.load()) {
                 std::string input = ui.getInput();

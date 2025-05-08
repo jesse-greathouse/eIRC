@@ -147,20 +147,19 @@ function _M.receive(instance_id, wb)
         -- ── SASL handshake steps if enabled ───────────────────
         if use_sasl then
           if line:match("^CAP %* LS") then
-            sock:send("CAP REQ :sasl\r\n")
+            sock:send("/input CAP REQ :sasl\n")
           elseif line == "CAP * ACK :sasl" then
             local raw = user .. "\0" .. user .. "\0" .. secret
             local b64 = ngx.encode_base64(raw)
-            sock:send("AUTHENTICATE " .. b64 .. "\r\n")
+            sock:send("/input AUTHENTICATE " .. b64 .. "\n")
           elseif line:match("^903") then
-            sock:send("CAP END\r\n")
+            sock:send("/input CAP END\n")
           end
         end
 
-        -- ── NickServ IDENTIFY fallback if SASL disabled ───────
         if not use_sasl then
           if line:match("%s376%s") or line:match("%s422%s") then
-            sock:send("PRIVMSG NickServ :IDENTIFY " .. secret .. "\r\n")
+            sock:send("/input PRIVMSG NickServ :IDENTIFY " .. secret .. "\n")
           end
         end
 
