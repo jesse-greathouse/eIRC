@@ -8,7 +8,10 @@ use Illuminate\Bus\Queueable,
     Illuminate\Queue\InteractsWithQueue,
     Illuminate\Queue\SerializesModels;
 
-use App\Models\User;
+use App\Models\User,
+    App\Services\NickServRegistrar;
+
+use Exception;
 
 class ResetSaslSecret implements ShouldQueue
 {
@@ -22,7 +25,7 @@ class ResetSaslSecret implements ShouldQueue
         $this->realname = $realname;
     }
 
-    public function handle(): void
+    public function handle(NickServRegistrar $registrar): void
     {
         $query = User::query();
 
@@ -31,11 +34,22 @@ class ResetSaslSecret implements ShouldQueue
         }
 
         foreach ($query->get() as $user) {
-            // Generate new secret
-            $user->sasl_secret = User::generateSaslSecret();
+            // Generate a fresh SASL secret
+            $newSecret = User::generateSaslSecret();
 
-            // TODO: synchronize this user’s new SASL secret with NickServ
+            // Ask NickServ to change its password
+            $result = $registrar->changePassword($user, $newSecret);
 
+            if (! ($result['success'] ?? false)) {
+                // If it fails, abort the job with an exception
+                throw new Exception(
+                    "NickServ password change failed for {$user->nick}: "
+                        . ($result['error'] ?? 'unknown error')
+                );
+            }
+
+            // Only persist the new secret if NickServ accepted it
+            $user->sasl_secret = $newSecret;
             $user->save();
         }
     }
