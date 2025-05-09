@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory,
 
 use Laravel\Passport\HasApiTokens;
 
+use App\Jobs\RegisterNickServ;
+
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
@@ -48,9 +50,10 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-            'settings' => 'array',
+            'email_verified_at'     => 'datetime',
+            'password'              => 'hashed',
+            'settings'              => 'array',
+            'is_irc_registered'     => 'boolean',
         ];
     }
 
@@ -59,7 +62,8 @@ class User extends Authenticatable
      */
     public static function generateSaslSecret(): string
     {
-        return Str::random(40);
+        // NickServ passwords must be ≤ 32 chars
+        return Str::random(32);
     }
 
     public function profile()
@@ -73,6 +77,12 @@ class User extends Authenticatable
             if (empty($user->sasl_secret)) {
                 $user->sasl_secret = self::generateSaslSecret();
             }
+        });
+
+        static::created(function (User $user) {
+            RegisterNickServ::dispatch($user->id)
+                ->onConnection('irc_operations')
+                ->onQueue('irc_operations');
         });
 
         static::saving(function ($user) {

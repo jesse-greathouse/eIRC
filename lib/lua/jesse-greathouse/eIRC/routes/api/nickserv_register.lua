@@ -75,36 +75,58 @@ function _M.route()
 	end
 
 	-- Send the REGISTER via /input
-	local register_cmd = "/input PRIVMSG NickServ :REGISTER "
-						.. user.sasl_secret .. " " .. user.email .. "\n"
-	local ok, send_err = sock:send(register_cmd)
-	if not ok then
-		irc.close(instance)
-		return http.exit(500, "Failed to send REGISTER: " .. (send_err or "unknown"))
-	end
+    local register_cmd = "/input PRIVMSG NickServ :REGISTER "
+                        .. user.sasl_secret .. " " .. user.email .. "\n"
+    local ok, send_err = sock:send(register_cmd)
+    if not ok then
+        irc.close(instance)
+        return http.exit(500, "Failed to send REGISTER: " .. (send_err or "unknown"))
+    end
 
-	-- Collect NickServ’s responses
-	local responses = {}
-	local deadline  = ngx.now() + 5  -- 5-second timeout
-	while ngx.now() < deadline do
-		local line, err = sock:receive("*l")
-		if not line then break end
-		table.insert(responses, line)
-		-- stop if we see a NickServ NOTICE about registration outcome
-		if line:find("NickServ") and 
-		(line:lower():find("registered") or line:lower():find("already registered") or line:lower():find("usage")) then
-		break
-		end
-	end
+    -- Collect NickServ’s responses (up to 5s)
+    local responses = {}
+    local deadline  = ngx.now() + 5
+    local success   = false
+    local errorMsg
 
-	-- Clean up
-	irc.close(instance)
+	deadline = ngx.now() + 5
+    while ngx.now() < deadline do
+        local line, err = sock:receive("*l")
+        if not line then
+            break
+        end
 
-	-- Return success + the raw service lines
-	return http.ok({
-		success   = true,
-		responses = responses
-	})
+        table.insert(responses, line)
+
+        -- Only inspect NickServ NOTICE lines
+        if line:match("^:NickServ") then
+            local lower = line:lower()
+
+            -- 1) Catch known error patterns first
+            if lower:find("too long")
+            or lower:find("usage")
+            or lower:find("error")
+            then
+                errorMsg = line:match(":%s*(.+)$")
+                success  = false
+                break
+            end
+
+            -- 2) If it contains “registered”, mark success
+            if lower:find("registered") then
+                success = true
+                break
+            end
+        end
+    end
+
+    irc.close(instance)
+
+    return http.ok({
+        success   = success,
+        error     = success and nil or (errorMsg or "Unknown response"),
+        responses = responses,
+    })
 end
 
 return _M
