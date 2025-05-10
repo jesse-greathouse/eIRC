@@ -281,7 +281,7 @@ sub request_user_input {
     foreach my $pair (@ordered_keys) {
         my ($domain, $key, $prompt_text) = @$pair; # Extract human-readable prompt name
 
-        if ($key =~ /DEBUG|IS_SSL/) {
+        if ($key =~ /DEBUG|IS_SSL|USE_SASL/) {
             input_boolean($domain, $key, $prompt_text);
         } elsif ($key =~ /PORT$/) {
             input_integer($domain, $key, $prompt_text);
@@ -436,17 +436,17 @@ sub input {
 sub input_boolean {
     my ($varDomain, $varName, $promptText) = @_;
 
-    # Ensure default value is correctly retrieved
-    my $default_value = $cfg{$varDomain}{$varName} // $defaults{$varDomain}{$varName} // 'false';
+    # Retrieve default ('true'/'false') → display-friendly 'y'/'n' for Term::Prompt
+    my $default_value = $cfg{$varDomain}{$varName}
+                     // $defaults{$varDomain}{$varName}
+                     // 'false';
+    my $default_prompt = ($default_value eq 'true') ? 'y' : 'n';
 
-    # Convert 'true'/'false' to 'yes'/'no' for user-friendly display
-    my $default = ($default_value eq 'true') ? 'yes' : 'no';
+    # prompt('y') returns 1 for yes, 0 for no
+    my $answer = prompt('y', "$promptText:", '', $default_prompt);
 
-    # Prompt the user
-    my $answer = prompt('y', "$promptText:", '', $default);
-
-    # Store 'true' or 'false' based on input
-    $cfg{$varDomain}{$varName} = ($answer eq 'yes') ? 'true' : 'false';
+    # Store based on numeric result
+    $cfg{$varDomain}{$varName} = $answer ? 'true' : 'false';
 }
 
 # Prompts for integer input with validation.
