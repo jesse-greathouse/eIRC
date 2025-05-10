@@ -97,12 +97,20 @@ int main(int argc, char *argv[])
         {
             auth = std::make_unique<NickServAdapter>();
         }
-        auth->negotiate(client);
 
-        // 2) Run negotiation
-        auth->negotiate(client);
+        // Do auth negotiation.
+        try
+        {
+            auth->negotiate(client);
+        }
+        catch (const std::exception &ex)
+        {
+            logger.log(std::string("ERROR during authentication negotiate: ") + ex.what());
+            logger.flush();
+            return 1;
+        }
 
-        // 3) Proceed with the normal NICK/USER
+        // Proceed with the normal NICK/USER
         client.authenticate(args.nick, args.user, args.realname);
 
         // Start background input thread (now joinable)

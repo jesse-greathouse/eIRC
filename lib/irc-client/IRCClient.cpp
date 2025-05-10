@@ -71,6 +71,11 @@ void IRCClient::registerEventHandlers()
         { return line.find(" PRIVMSG ") != std::string::npos; },
         {}};
 
+    eventHandlers[IRCEventKey::Cap] = EventHandler{
+        [](const std::string &line)
+        { return line.find(" CAP ") != std::string::npos; },
+        {}};
+
     eventHandlers[IRCEventKey::Whois] = EventHandler{
         [](const std::string &line)
         {
@@ -80,6 +85,32 @@ void IRCClient::registerEventHandlers()
                    line.find(" 318 ") != std::string::npos ||
                    line.find(" 319 ") != std::string::npos;
         },
+        {}};
+
+    // 903 = SASL authentication successful
+    eventHandlers["903"] = EventHandler{
+        [](const std::string &line)
+        { return line.find(" 903 ") != std::string::npos; },
+        {}};
+    // 904 = SASL authentication failed
+    eventHandlers["904"] = EventHandler{
+        [](const std::string &line)
+        { return line.find(" 904 ") != std::string::npos; },
+        {}};
+    // 905 = SASL mechanism too long
+    eventHandlers["905"] = EventHandler{
+        [](const std::string &line)
+        { return line.find(" 905 ") != std::string::npos; },
+        {}};
+    // 906 = SASL aborted
+    eventHandlers["906"] = EventHandler{
+        [](const std::string &line)
+        { return line.find(" 906 ") != std::string::npos; },
+        {}};
+    // 907 = SASL already in progress
+    eventHandlers["907"] = EventHandler{
+        [](const std::string &line)
+        { return line.find(" 907 ") != std::string::npos; },
         {}};
 }
 
@@ -170,7 +201,7 @@ void IRCClient::startInputLoop()
                     throw std::runtime_error(":client error :Unrecognized command: \"" + input + "\"");
                 }
 
-                if (!isJoined()) {
+                if (isJoined()) {
                     break;
                 }
             }
