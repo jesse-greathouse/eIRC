@@ -52,6 +52,10 @@ function _M.start_client(nick, realname, server, port, channels, instance_id, sa
     table.insert(args, "--channels=" .. channels_str)
   end
 
+  if env.use_sasl() then
+    table.insert(args, "--sasl")
+  end
+
   local proc, err = pipe.spawn(args, {
     merge_stderr = true,
     detached = true,
@@ -93,6 +97,7 @@ function _M.connect(instance_id)
 
   ngx.log(ngx.INFO, "Connected to IRC socket for instance_id ", instance_id)
   store.set_socket(instance_id, sock)
+
   return sock
 end
 
@@ -137,30 +142,24 @@ function _M.receive(instance_id, wb)
   -- pull SASL flag & secret, and the realname username
   local use_sasl = env.use_sasl()
   local secret   = store.get_secret(instance_id) or ""
-  local user     = store.get_realname(instance_id) or instance_id
+  local realname     = store.get_realname(instance_id) or instance_id
 
   store.set_reader(instance_id, ngx.thread.spawn(function()
     while store.running(instance_id) do
       local line, err = sock:receive("*l")
 
       if line then
-        -- ── SASL handshake steps if enabled ───────────────────
+        -- SASL handshake authentication if enabled
         if use_sasl then
-          if line:match("^CAP %* LS") then
-            sock:send("CAP REQ :sasl\r\n")
-          elseif line == "CAP * ACK :sasl" then
-            local raw = user .. "\0" .. user .. "\0" .. secret
-            local b64 = ngx.encode_base64(raw)
-            sock:send("AUTHENTICATE " .. b64 .. "\r\n")
-          elseif line:match("^903") then
-            sock:send("CAP END\r\n")
+          if line:match("^AUTHENTICATE%s*[:]?%+") then
+            -- Server is asking for our PLAIN blob
+            local raw = realname .. "\0" .. realname .. "\0" .. secret
+            sock:send("/input AUTHENTICATE " .. ngx.encode_base64(raw) .. "\n")
           end
-        end
-
-        -- ── NickServ IDENTIFY fallback if SASL disabled ───────
-        if not use_sasl then
+        else
+          -- NickServ fallback for non-SASL
           if line:match("%s376%s") or line:match("%s422%s") then
-            sock:send("PRIVMSG NickServ :IDENTIFY " .. secret .. "\r\n")
+            sock:send("/input PRIVMSG NickServ :IDENTIFY " .. secret .. "\n")
           end
         end
 

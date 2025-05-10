@@ -43,6 +43,14 @@ return [
             'after_commit' => false,
         ],
 
+        'irc_operations' => [
+            'driver'       => 'database',
+            'table'        => env('DB_QUEUE_TABLE', 'jobs'),
+            'queue'        => 'irc_operations',
+            'retry_after'  => 90,
+            'after_commit' => false,
+        ],
+
         'beanstalkd' => [
             'driver' => 'beanstalkd',
             'host' => env('BEANSTALKD_QUEUE_HOST', 'localhost'),

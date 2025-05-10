@@ -1,55 +1,48 @@
-#include "SaslAdapter.hpp"
-#include "IRCEventKeys.hpp"
 #include <asio/write.hpp>
 #include <functional>
+#include "SaslAdapter.hpp"
+#include "IRCEventKeys.hpp"
 
 void SaslAdapter::negotiate(IRCClient &client)
 {
-	// Start CAP LS
+	// Advertise capabilities
 	client.writeToServer("CAP LS 302\n");
 
-	// On CAP LS reply, request SASL
+	// When LS arrives, ask for SASL
 	client.addEventHandler(IRCEventKey::Cap,
-						   [&](IRCClient &, const std::string &line)
+						   [&](IRCClient &c, const std::string &line)
 						   {
-							   if (line.rfind("CAP * LS", 0) == 0 && line.find("sasl") != std::string::npos)
+							   if (line.find(" LS ") != std::string::npos && line.find("sasl") != std::string::npos)
 							   {
-								   client.writeToServer("CAP REQ :sasl\n");
+								   c.writeToServer("CAP REQ :sasl\n");
+							   }
+							   else if (line.find(" ACK :sasl") != std::string::npos)
+							   {
+								   c.writeToServer("AUTHENTICATE PLAIN\n");
 							   }
 						   });
 
-	// 3) On CAP ACK, *signal* over the UI socket that we need the AUTHENTICATE
-	client.addEventHandler(IRCEventKey::Cap,
-						   [&](IRCClient &, const std::string &line)
-						   {
-							   if (line == "CAP * ACK :sasl")
-							   {
-								   // debug: note that SASL ACK arrived
-								   client.getLogger().log("[DEBUG] Server acknowledged SASL, awaiting client-side AUTHENTICATE");
-							   }
-						   });
-
-	// Handle numeric replies:
-	// Success → finish cap
+	// On numeric 903 (success), finish capability negotiation —
 	client.addEventHandler("903",
-						   [&](IRCClient &, const std::string &)
+						   [&](IRCClient &c, const std::string &)
 						   {
-							   client.writeToServer("CAP END\n");
+							   c.writeToServer("CAP END\n");
 						   });
 
-	// Failures: 904–907
+	// — Step F: On 904–907 (failures), log, notify UI, and end CAP —
 	auto makeHandler = [&](const char *code, const char *msg)
 	{
 		client.addEventHandler(code,
-							   [code, msg](IRCClient &c, const std::string &line)
+							   [code, msg](IRCClient &c, const std::string &)
 							   {
 								   std::string out = std::string("! SASL error (") + code + "): " + msg;
 								   c.getLogger().log(out);
 								   c.getUi().drawOutput(out);
+								   c.writeToServer("CAP END\n");
 							   });
 	};
-	makeHandler("904", "SASL authentication failed");
-	makeHandler("905", "SASL mechanism too long");
-	makeHandler("906", "SASL aborted");
-	makeHandler("907", "SASL already in progress");
+	makeHandler("904", "authentication failed");
+	makeHandler("905", "mechanism too long");
+	makeHandler("906", "authentication aborted");
+	makeHandler("907", "already in progress");
 }

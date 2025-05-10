@@ -55,8 +55,8 @@ public:
 
 	void addEventHandler(const std::string &eventKey, std::function<void(IRCClient &, const std::string &)> handler);
 
-	[[nodiscard]] bool isJoined() const noexcept;
-	void setJoined(bool joined);
+	[[nodiscard]] bool isChannelsJoined() const noexcept;
+	void setChannelsJoined(bool value);
 
 	[[nodiscard]] std::string formatUserList(const std::string &channelName) const;
 	[[nodiscard]] std::string formatChannelList() const;
@@ -97,7 +97,7 @@ private:
 	std::optional<asio::ssl::context> sslContext;
 
 	bool useTls = false;
-	std::atomic<bool> joined = false;
+	std::atomic<bool> channelsJoined = false;
 	std::atomic<bool> running = true;
 
 	std::map<std::string, User> users;

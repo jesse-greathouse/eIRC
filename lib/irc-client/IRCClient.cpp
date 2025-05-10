@@ -18,7 +18,7 @@
 #include "Commands/InputCommand.hpp"
 
 IRCClient::IRCClient(asio::io_context &context, Logger &logger, IOAdapter &ui, const std::vector<std::string> &channels)
-    : ioContext(context), logger(logger), ui(ui), joined(false), joinedChannels(channels)
+    : ioContext(context), logger(logger), ui(ui), channelsJoined(false), joinedChannels(channels)
 {
     std::string joinedList;
     for (const auto &ch : channels)
@@ -62,13 +62,19 @@ void IRCClient::registerEventHandlers()
     eventHandlers[IRCEventKey::MotdEnd] = EventHandler{
         [this](const std::string &line)
         {
-            return !joined && (line.find("376") != std::string::npos || line.find("422") != std::string::npos);
+            return !isChannelsJoined()
+                && (line.find("376") != std::string::npos || line.find("422") != std::string::npos);
         },
         {}};
 
     eventHandlers[IRCEventKey::Privmsg] = EventHandler{
         [](const std::string &line)
         { return line.find(" PRIVMSG ") != std::string::npos; },
+        {}};
+
+    eventHandlers[IRCEventKey::Cap] = EventHandler{
+        [](const std::string &line)
+        { return line.find(" CAP ") != std::string::npos; },
         {}};
 
     eventHandlers[IRCEventKey::Whois] = EventHandler{
@@ -80,6 +86,32 @@ void IRCClient::registerEventHandlers()
                    line.find(" 318 ") != std::string::npos ||
                    line.find(" 319 ") != std::string::npos;
         },
+        {}};
+
+    // 903 = SASL authentication successful
+    eventHandlers["903"] = EventHandler{
+        [](const std::string &line)
+        { return line.find(" 903 ") != std::string::npos; },
+        {}};
+    // 904 = SASL authentication failed
+    eventHandlers["904"] = EventHandler{
+        [](const std::string &line)
+        { return line.find(" 904 ") != std::string::npos; },
+        {}};
+    // 905 = SASL mechanism too long
+    eventHandlers["905"] = EventHandler{
+        [](const std::string &line)
+        { return line.find(" 905 ") != std::string::npos; },
+        {}};
+    // 906 = SASL aborted
+    eventHandlers["906"] = EventHandler{
+        [](const std::string &line)
+        { return line.find(" 906 ") != std::string::npos; },
+        {}};
+    // 907 = SASL already in progress
+    eventHandlers["907"] = EventHandler{
+        [](const std::string &line)
+        { return line.find(" 907 ") != std::string::npos; },
         {}};
 }
 
@@ -146,7 +178,7 @@ std::size_t IRCClient::readFromServer(char *buf, std::size_t size)
 void IRCClient::startInputLoop()
 {
     inputThread = std::thread([this]
-                              {
+        {
         try {
             while (running.load()) {
                 std::string input = ui.getInput();
@@ -170,9 +202,6 @@ void IRCClient::startInputLoop()
                     throw std::runtime_error(":client error :Unrecognized command: \"" + input + "\"");
                 }
 
-                if (!isJoined()) {
-                    break;
-                }
             }
         } catch (const std::exception &ex) {
             const std::string message = "Fatal error in input thread: " + std::string(ex.what());
@@ -415,14 +444,14 @@ Logger &IRCClient::getLogger()
     return logger;
 }
 
-bool IRCClient::isJoined() const noexcept
+bool IRCClient::isChannelsJoined() const noexcept
 {
-    return joined.load(std::memory_order_relaxed);
+    return channelsJoined.load(std::memory_order_relaxed);
 }
 
-void IRCClient::setJoined(bool value)
+void IRCClient::setChannelsJoined(bool value)
 {
-    joined.store(value, std::memory_order_relaxed);
+    channelsJoined.store(value, std::memory_order_relaxed);
 }
 
 IOAdapter &IRCClient::getUi()
