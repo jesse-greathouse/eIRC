@@ -33,6 +33,18 @@ function _M.clear_realname(id)
   _M.realnames[id] = nil
 end
 
+function _M.set_secret(id, secret)
+  _M.secrets[id] = secret
+end
+
+function _M.get_secret(id)
+  return _M.secrets[id]
+end
+
+function _M.clear_secret(id)
+  _M.secrets[id] = nil
+end
+
 function _M.clear_all(id)
   _M.clear_socket(id)
   _M.clear_reader(id)
