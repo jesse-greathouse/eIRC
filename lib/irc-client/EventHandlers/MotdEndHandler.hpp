@@ -18,6 +18,6 @@ inline std::function<void(IRCClient &, const std::string &)> motdEndHandler()
 		// Joining those channels should be delayed until the end of the MOTD.
 		// Joining channels before MOTD will result in failure!
 		client.joinChannels(client.getJoinedChannels());
-		client.setJoined(true);
+		client.setChannelsJoined(true);
 	};
 }

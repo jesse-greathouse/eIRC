@@ -18,7 +18,7 @@
 #include "Commands/InputCommand.hpp"
 
 IRCClient::IRCClient(asio::io_context &context, Logger &logger, IOAdapter &ui, const std::vector<std::string> &channels)
-    : ioContext(context), logger(logger), ui(ui), joined(false), joinedChannels(channels)
+    : ioContext(context), logger(logger), ui(ui), channelsJoined(false), joinedChannels(channels)
 {
     std::string joinedList;
     for (const auto &ch : channels)
@@ -62,7 +62,8 @@ void IRCClient::registerEventHandlers()
     eventHandlers[IRCEventKey::MotdEnd] = EventHandler{
         [this](const std::string &line)
         {
-            return !joined && (line.find("376") != std::string::npos || line.find("422") != std::string::npos);
+            return !isChannelsJoined()
+                && (line.find("376") != std::string::npos || line.find("422") != std::string::npos);
         },
         {}};
 
@@ -201,9 +202,6 @@ void IRCClient::startInputLoop()
                     throw std::runtime_error(":client error :Unrecognized command: \"" + input + "\"");
                 }
 
-                if (isJoined()) {
-                    break;
-                }
             }
         } catch (const std::exception &ex) {
             const std::string message = "Fatal error in input thread: " + std::string(ex.what());
@@ -446,14 +444,14 @@ Logger &IRCClient::getLogger()
     return logger;
 }
 
-bool IRCClient::isJoined() const noexcept
+bool IRCClient::isChannelsJoined() const noexcept
 {
-    return joined.load(std::memory_order_relaxed);
+    return channelsJoined.load(std::memory_order_relaxed);
 }
 
-void IRCClient::setJoined(bool value)
+void IRCClient::setChannelsJoined(bool value)
 {
-    joined.store(value, std::memory_order_relaxed);
+    channelsJoined.store(value, std::memory_order_relaxed);
 }
 
 IOAdapter &IRCClient::getUi()
