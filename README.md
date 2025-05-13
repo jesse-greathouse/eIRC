@@ -18,20 +18,23 @@ _<small>The architecture is represented using a C4 Container Diagram.</small>_
 
 ## 📌 Nginx, PHP, Laravel, C++, LuaJit, Vue [Component Licensing](https://raw.githubusercontent.com/jesse-greathouse/eIRC/refs/heads/main/eIRC-Licensing-Overview.pdf)
 
+## 📌 User Identity [Synchronization & Authentication](https://raw.githubusercontent.com/jesse-greathouse/eIRC/refs/heads/main/eIRC-Identity-Synchronization-and-Authentication.pdf)
+
 The system is composed of three core architectural tiers:
 
 1. **Frontend Client** (any browser-based or native application)
 2. **Session Bridge Layer** (WebSocket server running in OpenResty, per-user IRC client process)
 3. **Infrastructure Services** (IRC server, Laravel-based backend, persistent database)
+
 ---
 
 ## 1. Frontend Client
 
-### Description:
+### Description
 
 The frontend is a JavaScript application built with Vue 3 and Inertia.js. However, eIRC is **frontend-agnostic**: any application capable of opening a WebSocket and handling IRC-style messages can integrate with the backend.
 
-### Responsibilities:
+### Responsibilities
 
 - Authenticate user via OAuth2 (Laravel Passport)
 - Request short-lived `chat_token` from Laravel (`/chat` route)
@@ -45,11 +48,11 @@ The frontend is a JavaScript application built with Vue 3 and Inertia.js. Howeve
 
 ### WebSocket Server (OpenResty + Lua)
 
-#### Description:
+#### WebSocket Description
 
 Built inside Nginx workers using the `lua-resty-websocket` and `ngx.pipe` libraries, this layer bridges the frontend and backend without external WebSocket daemons or Node.js servers.
 
-#### Responsibilities:
+#### WebSocket Responsibilities
 
 - Accept WebSocket upgrade requests
 - Validate `chat_token` via internal API call to Laravel (`/api/auth/user/{tokenId}`)
@@ -61,11 +64,11 @@ Built inside Nginx workers using the `lua-resty-websocket` and `ngx.pipe` librar
 
 ### IRC Client (C++23)
 
-#### Description:
+#### Client Description
 
 A small, memory-efficient IRC protocol proxy. Each user connection results in one instance of this process. It connects to the IRC server and communicates with the WebSocket server over a UNIX domain socket.
 
-#### Responsibilities:
+#### Client Responsibilities
 
 - Authenticate and connect to InspIRCd
 - Join channels as directed
@@ -73,7 +76,7 @@ A small, memory-efficient IRC protocol proxy. Each user connection results in on
 - Accept frontend commands via socket and translate to IRC protocol
 - Shut down cleanly on quit or socket disconnect
 
-#### Resource Usage:
+#### Resource Usage
 
 - 10 MB resident memory per process
 - Minimal CPU load during idle; spiky under large IRC traffic bursts
@@ -85,11 +88,11 @@ A small, memory-efficient IRC protocol proxy. Each user connection results in on
 
 ### IRC Server (InspIRCd)
 
-#### Description:
+#### Server Description
 
 A standard IRC daemon which handles routing, presence, and channel state. No modification required. It is treated as a pure message bus.
 
-#### Responsibilities:
+#### Server Responsibilities
 
 - Handle all IRC protocol delivery
 - Manage channels, users, joins, parts, and messages
@@ -98,11 +101,11 @@ A standard IRC daemon which handles routing, presence, and channel state. No mod
 
 ### Laravel Backend
 
-#### Description:
+#### Laravel Description
 
 A Laravel 12 application responsible for persistent user management, chatroom metadata, and issuing short-lived tokens.
 
-#### Responsibilities:
+#### Laravel Responsibilities
 
 - User authentication via Laravel Passport
 - Chatroom metadata API
@@ -112,7 +115,7 @@ A Laravel 12 application responsible for persistent user management, chatroom me
 
 ### Database (PostgreSQL or MySQL)
 
-#### Responsibilities:
+#### Database Responsibilities
 
 - Store user profiles, nicknames, preferences
 - Track persistent chatroom metadata
@@ -176,7 +179,7 @@ Tokens are:
 - Redis (optional, for central cache)
 - InspIRCd daemon
 
-### Processes:
+### Processes
 
 - 1 Nginx master + N workers
 - 1 PHP-FPM pool
