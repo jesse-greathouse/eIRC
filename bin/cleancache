@@ -1,0 +1,26 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use File::Path qw(rmtree);
+
+warn $@ if $@; # handle exception
+
+my $var = $ENV{'VAR'};
+
+# Check for --var argument
+for (my $i = 0; $i < @ARGV; $i++) {
+    $var = $ARGV[$i + 1] if $ARGV[$i] eq '--var';
+}
+
+# Define cache directories and clean them
+clean("$var/cache/file");
+
+sub clean {
+    my ($path) = @_;
+    if (-d $path) {
+        print "...cleaning: $path...\n";
+        rmtree $path;
+    }
+    mkdir $path;
+}

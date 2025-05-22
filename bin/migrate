@@ -1,0 +1,12 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use Cwd qw(getcwd abs_path);
+use File::Basename;
+use lib(dirname(abs_path(__FILE__))  . "/modules");
+use eIRC::Migrate qw(migrate);
+
+warn $@ if $@; # Handle exceptions
+
+migrate();

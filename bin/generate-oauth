@@ -1,0 +1,18 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use Cwd qw(abs_path);
+use File::Basename;
+use lib(dirname(abs_path(__FILE__)) . "/modules");
+
+use eIRC::OAuthKeys qw(generate_oauth_keys);
+
+warn $@ if $@; # Handle exceptions
+
+# Paths to key files used by Configure.pm
+my $applicationRoot = abs_path(dirname(dirname(__FILE__)));
+my $privateKey = "$applicationRoot/etc/ssl/oath/oath-private.key";
+my $publicKey  = "$applicationRoot/etc/ssl/oath/oath-public.key";
+
+generate_oauth_keys($privateKey, $publicKey);

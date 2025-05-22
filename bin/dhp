@@ -1,0 +1,45 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use File::Basename;
+use Scalar::Util qw(looks_like_number);
+use Cwd qw(abs_path);
+use lib dirname(abs_path(__FILE__)) . "/modules";
+use eIRC::Utility qw(command_result);
+
+warn $@ if $@; # Handle exceptions
+
+my $etc = $ENV{'ETC'};
+my $bitDepth = 2048;
+my $overwrite = 0;
+
+# Process command-line arguments
+for (my $i = 0; $i < @ARGV; $i++) {
+    if ($ARGV[$i] eq '--etc') {
+        $etc = $ARGV[++$i];
+    } elsif ($ARGV[$i] eq '--overwrite') {
+        $overwrite = 1;
+    } elsif ($ARGV[$i] eq '--bitdepth') {
+        my $newBitDepth = $ARGV[++$i];
+        looks_like_number($newBitDepth) ? ($bitDepth = $newBitDepth)
+            : die "Invalid bitdepth: $newBitDepth\n";
+    }
+}
+
+my $certDir = "$etc/ssl/certs";
+my $dhparamFile = "$certDir/dhparam.pem";
+
+# Delete existing file if --overwrite is set
+unlink $dhparamFile if $overwrite && -e $dhparamFile;
+
+# Generate DH params if file doesn't exist
+if (!-e $dhparamFile) {
+    my @cmd = ('openssl', 'dhparam', '-out', $dhparamFile, $bitDepth);
+    system(@cmd);
+    command_result($?, $!, "openssl dhparam", \@cmd);
+    print "\n";
+} else {
+    print "...dhp file already exists. skipping...\n";
+    exit 0;
+}

@@ -1,0 +1,18 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use Cwd qw(getcwd abs_path);
+use File::Basename;
+use lib(dirname(abs_path(__FILE__)) . "/modules");
+use eIRC::Install qw(install install_help);
+
+warn $@ if $@; # Handle exceptions
+
+# If user passed 'help' anywhere in the arguments, show help
+if (grep { $_ eq 'help' or $_ eq '--help' or $_ eq '-h' } @ARGV) {
+    install_help();
+    exit(0);
+}
+
+install();

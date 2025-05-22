@@ -1,0 +1,12 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use Cwd qw(getcwd abs_path);
+use File::Basename;
+use lib(dirname(abs_path(__FILE__))  . "/modules");
+use eIRC::Seed qw(seed);
+
+warn $@ if $@; # Handle exceptions
+
+seed();
